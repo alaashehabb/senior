@@ -61,7 +61,27 @@ function registerChatHandlers(io, socket) {
       }
 
       socket.join(resolvedRoomId);
-      return ack?.({ ok: true, roomId: resolvedRoomId });
+      const recentMessages = await prisma.message.findMany({
+        where: { roomId: resolvedRoomId },
+        orderBy: { createdAt: "asc" },
+        take: 50,
+        include: {
+          sender: { select: { id: true, name: true, email: true } },
+        },
+      });
+
+      return ack?.({
+        ok: true,
+        roomId: resolvedRoomId,
+        messages: recentMessages.map((item) => ({
+          id: item.id,
+          roomId: item.roomId,
+          content: item.content,
+          contentType: item.contentType,
+          createdAt: item.createdAt,
+          sender: item.sender,
+        })),
+      });
     } catch (error) {
       console.error("chat:join error", error);
       return ack?.({ ok: false, message: "Failed to join room" });
