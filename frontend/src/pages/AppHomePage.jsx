@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
+import ASLStickman from "../components/ASLStickman";
+import ASLWordStickman from "../components/ASLWordStickman";
 
 function AppHomePage() {
   const { user, logout } = useAuth();
@@ -356,8 +358,28 @@ function AppHomePage() {
           </div>
         ) : (
           <section className="tab-panel">
-            <h3>Educational module</h3>
-            <p>Exercises and guided learning will be added in the next steps.</p>
+            <h3 style={{ marginBottom: "4px" }}>ASL Sign Translator</h3>
+            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.875rem", marginBottom: "24px" }}>
+              Two modes: fingerspell any text letter-by-letter, or watch the full-body stickman sign common ASL words.
+            </p>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px", alignItems: "start" }}>
+              {/* Left: letter fingerspelling */}
+              <div>
+                <h4 style={{ color: "#A78BFA", marginBottom: "12px", fontSize: "0.95rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Fingerspelling (A–Z)
+                </h4>
+                <ASLStickman />
+              </div>
+
+              {/* Right: full-body word signing */}
+              <div>
+                <h4 style={{ color: "#F472B6", marginBottom: "12px", fontSize: "0.95rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Word Signs (full body)
+                </h4>
+                <ASLWordStickman />
+              </div>
+            </div>
           </section>
         )}
       </div>
