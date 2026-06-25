@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+python-multipart
+numpy>=1.23.5,<2.0.0
+opencv-python-headless<4.12
+mediapipe==0.10.14
+tensorflow==2.15.1
+pose-format

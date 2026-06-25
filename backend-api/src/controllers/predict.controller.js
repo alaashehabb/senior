@@ -1,10 +1,16 @@
 async function predict(req, res) {
   try {
-    const { language, mode, landmarks } = req.body;
+    const { language, mode, landmarks, imageBase64 } = req.body;
 
-    if (!language || !mode || !landmarks) {
+    if (!language || !mode) {
       return res.status(400).json({
-        message: "language, mode, and landmarks are required",
+        message: "language and mode are required",
+      });
+    }
+
+    if (!landmarks && !imageBase64) {
+      return res.status(400).json({
+        message: "landmarks or imageBase64 is required",
       });
     }
 
@@ -16,7 +22,7 @@ async function predict(req, res) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ language, mode, landmarks }),
+        body: JSON.stringify({ language, mode, landmarks, imageBase64 }),
       });
 
       if (!response.ok) {

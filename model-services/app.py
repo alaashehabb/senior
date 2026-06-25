@@ -34,7 +34,8 @@ def health():
 class PredictRequest(BaseModel):
     language: str
     mode: str
-    landmarks: list[float]
+    landmarks: list[float] | None = None
+    imageBase64: str | None = None
 
 
 @app.post("/predict")
@@ -43,6 +44,38 @@ def predict(payload: PredictRequest):
     mode     = payload.mode.lower()
     if language not in {"ar", "en"} or mode not in {"letters", "words"}:
         return {"message": "Invalid language or mode"}
+
+    if language == "en" and mode == "letters":
+        try:
+            from asl_mlp_inference import predict_letter
+
+            result = predict_letter(
+                image_base64=payload.imageBase64,
+                landmarks=payload.landmarks,
+            )
+            return {"prediction": result}
+        except FileNotFoundError as exc:
+            return {"message": str(exc)}
+        except Exception as exc:
+            return {"message": f"ASL model inference failed: {exc}"}
+
+    if language == "ar" and mode == "letters":
+        try:
+            from arsl_mlp_inference import predict_letter
+
+            result = predict_letter(
+                image_base64=payload.imageBase64,
+                landmarks=payload.landmarks,
+            )
+            return {"prediction": result}
+        except FileNotFoundError as exc:
+            return {"message": str(exc)}
+        except Exception as exc:
+            return {"message": f"ArSL model inference failed: {exc}"}
+
+    if not payload.landmarks and not payload.imageBase64:
+        return {"message": "landmarks or imageBase64 is required"}
+
     text = (AR_LETTERS if language == "ar" else EN_LETTERS)[0] if mode == "letters" \
         else (AR_WORDS if language == "ar" else EN_WORDS)[0]
     return {"prediction": {"text": text, "confidence": 0.85, "source": "mock"}}

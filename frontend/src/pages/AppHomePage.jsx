@@ -77,10 +77,20 @@ function AppHomePage() {
     setStatus("Translating sign...");
     try {
       const res = await api.post("/predict", { language, mode, imageBase64 });
-      const text = res.data?.prediction?.text || "";
-      setPredictedText((prev) => (prev ? `${prev} ${text}` : text));
+      const prediction = res.data?.prediction || {};
+      const text = prediction.text || "";
+      if (prediction.action === "delete") {
+        setPredictedText((prev) => prev.slice(0, -1));
+        setStatus(`Deleted last character (${Math.round((prediction.confidence || 0) * 100)}%)`);
+        return;
+      }
+      if (!text) {
+        setStatus(prediction.message || "No sign detected. Try again.");
+        return;
+      }
+      setPredictedText((prev) => (prev ? `${prev}${text}` : text));
       setStatus(
-        `Sign translated: ${text} (${Math.round((res.data?.prediction?.confidence || 0) * 100)}%)`
+        `Sign translated: ${text} (${Math.round((prediction.confidence || 0) * 100)}%)`
       );
     } catch (err) {
       setStatus(err.response?.data?.message || "Translation failed");

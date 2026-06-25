@@ -1,4 +1,5 @@
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 
 const http = require("http");
 const { Server } = require("socket.io");
@@ -12,6 +13,13 @@ const PORT = process.env.PORT || 5000;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "*";
 
 const server = http.createServer(app);
+
+const requiredEnv = ["JWT_SECRET", "DATABASE_URL"];
+const missingEnv = requiredEnv.filter((key) => !process.env[key]);
+if (missingEnv.length > 0) {
+  console.error(`Missing required env variables: ${missingEnv.join(", ")}`);
+  process.exit(1);
+}
 
 const io = new Server(server, {
   cors: {
