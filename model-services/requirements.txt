@@ -6,3 +6,5 @@ opencv-python-headless<4.12
 mediapipe==0.10.14
 tensorflow==2.15.1
 pose-format
+torch
+torchvision

@@ -36,6 +36,7 @@ class PredictRequest(BaseModel):
     mode: str
     landmarks: list[float] | None = None
     imageBase64: str | None = None
+    sessionId: str | None = "default_session"
 
 
 @app.post("/predict")
@@ -72,6 +73,21 @@ def predict(payload: PredictRequest):
             return {"message": str(exc)}
         except Exception as exc:
             return {"message": f"ArSL model inference failed: {exc}"}
+
+    if language == "en" and mode == "words":
+        try:
+            from wlasl_inference import predict_word
+            
+            if not payload.imageBase64:
+                return {"message": "imageBase64 is required for WLASL words"}
+                
+            result = predict_word(
+                session_id=payload.sessionId,
+                image_base64=payload.imageBase64
+            )
+            return {"prediction": result}
+        except Exception as exc:
+            return {"message": f"WLASL model inference failed: {exc}"}
 
     if not payload.landmarks and not payload.imageBase64:
         return {"message": "landmarks or imageBase64 is required"}

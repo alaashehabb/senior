@@ -22,7 +22,13 @@ async function predict(req, res) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ language, mode, landmarks, imageBase64 }),
+        body: JSON.stringify({ 
+          language, 
+          mode, 
+          landmarks, 
+          imageBase64,
+          sessionId: req.user ? req.user.id : "anonymous"
+        }),
       });
 
       if (!response.ok) {
