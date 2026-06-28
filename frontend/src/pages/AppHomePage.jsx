@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import api from "../services/api";
 import ASLStickman from "../components/ASLStickman";
 import ASLWordStickman from "../components/ASLWordStickman";
 
 function AppHomePage() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState("chat");
   const [language, setLanguage] = useState("en");
   const [mode, setMode] = useState("letters");
@@ -14,15 +16,20 @@ function AppHomePage() {
   const [status, setStatus] = useState("Camera is off");
   const [sending, setSending] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
+  const [videoDevices, setVideoDevices] = useState([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState("");
   const [messages, setMessages] = useState([]);
   const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [roomId, setRoomId] = useState("");
   const [chatStatus, setChatStatus] = useState("Choose a user to start chat.");
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const socketRef = useRef(null);
+  const chatEndRef = useRef(null);
 
   const stopCamera = () => {
     if (streamRef.current) {
@@ -38,8 +45,12 @@ function AppHomePage() {
 
   const startCamera = async () => {
     try {
+      const videoConstraints = selectedDeviceId
+        ? { deviceId: { exact: selectedDeviceId }, width: 640, height: 480 }
+        : { facingMode: "user", width: 640, height: 480 };
+
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 },
+        video: videoConstraints,
         audio: false,
       });
       streamRef.current = stream;
@@ -48,8 +59,17 @@ function AppHomePage() {
       }
       setCameraOn(true);
       setStatus("Camera is ready");
-    } catch (_error) {
-      setStatus("Cannot access camera. Please allow webcam permission.");
+    } catch (error) {
+      console.error("Camera access error:", error);
+      if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
+        setStatus(
+          "📷 Camera access denied. Please click the camera icon in your browser's address bar, allow access, and refresh the page."
+        );
+      } else if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
+        setStatus("📷 No camera found. Please connect a webcam and try again.");
+      } else {
+        setStatus("📷 Cannot access camera. Please check your device settings and try again.");
+      }
     }
   };
 
@@ -141,6 +161,37 @@ function AppHomePage() {
   useEffect(() => stopCamera, []);
 
   useEffect(() => {
+    async function loadVideoDevices() {
+      if (!navigator.mediaDevices?.enumerateDevices) {
+        setStatus("Your browser does not support webcam device selection.");
+        return;
+      }
+
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoInputs = devices.filter((device) => device.kind === "videoinput");
+        setVideoDevices(videoInputs);
+
+        if (videoInputs.length === 0) {
+          setStatus("No camera devices found.");
+          return;
+        }
+
+        const internalCamera = videoInputs.find((device) =>
+          /integrated|internal|built-in|front|face/i.test(device.label)
+        );
+
+        setSelectedDeviceId(internalCamera?.deviceId || videoInputs[0].deviceId);
+      } catch (error) {
+        console.error("Failed to enumerate camera devices:", error);
+      }
+    }
+
+    loadVideoDevices();
+  }, []);
+
+  useEffect(() => {
+    setUsersLoading(true);
     api
       .get("/users")
       .then((res) => {
@@ -150,8 +201,31 @@ function AppHomePage() {
           setSelectedUserId(list[0].id);
         }
       })
-      .catch(() => setChatStatus("Could not load users."));
+      .catch(() => setChatStatus("Could not load users."))
+      .finally(() => setUsersLoading(false));
   }, []);
+
+  // Auto-scroll chat to newest message
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleLogout = () => {
+    if (showLogoutConfirm) {
+      logout();
+    } else {
+      setShowLogoutConfirm(true);
+      // Auto-reset after 3 seconds if user doesn't confirm
+      setTimeout(() => setShowLogoutConfirm(false), 3000);
+    }
+  };
+
+  const handleChatKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey && predictedText.trim()) {
+      e.preventDefault();
+      handleSendToChat();
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("slr_token");
@@ -182,10 +256,26 @@ function AppHomePage() {
     <main className="page-shell">
       <div className="card wide">
         <div className="header-row">
-          <h2>Hello, {user?.name}</h2>
-          <button type="button" onClick={logout}>
-            Logout
-          </button>
+          <div className="logo-row header-logo-row">
+            <img src="/signbridge-logo.png" className="site-logo" alt="SignBridge Logo" />
+            <div>
+              <h2 style={{ margin: 0 }}>Hello, {user?.name}</h2>
+              <p className="logo-tagline" style={{ margin: 0 }}>Sign language letters and chat assistant</p>
+            </div>
+          </div>
+          <div className="header-actions">
+            <button type="button" className="theme-toggle" onClick={toggleTheme}>
+              {theme === "dark" ? "Light mode" : "Dark mode"}
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              onBlur={() => setShowLogoutConfirm(false)}
+              className={showLogoutConfirm ? "logout-confirm" : ""}
+            >
+              {showLogoutConfirm ? "Sure? Click again" : "Logout"}
+            </button>
+          </div>
         </div>
 
         <div className="tabs">
@@ -206,7 +296,7 @@ function AppHomePage() {
         </div>
 
         {activeTab === "chat" ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "24px" }}>
+          <div className="app-grid">
             <section className="tab-panel">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
@@ -225,8 +315,30 @@ function AppHomePage() {
                 </div>
               </div>
 
+              <div style={{ display: "flex", gap: "12px", marginBottom: "16px", alignItems: "center" }}>
+                {videoDevices.length > 0 && (
+                  <div style={{ flex: 1 }}>
+                    <label className="label" htmlFor="camera-device">
+                      Camera device
+                    </label>
+                    <select
+                      id="camera-device"
+                      value={selectedDeviceId}
+                      onChange={(e) => setSelectedDeviceId(e.target.value)}
+                      style={{ width: "100%" }}
+                    >
+                      {videoDevices.map((device) => (
+                        <option key={device.deviceId} value={device.deviceId}>
+                          {device.label || `Camera ${device.deviceId}`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
               <div className="video-placeholder" style={{ position: "relative", width: "100%", aspectRatio: "4/3" }}>
-                <video ref={videoRef} autoPlay playsInline muted className="camera-view" />
+                <video ref={videoRef} autoPlay playsInline muted className="camera-view" style={{ transform: "scaleX(-1)" }} />
                 {!cameraOn && (
                   <div
                     style={{
@@ -262,24 +374,25 @@ function AppHomePage() {
               style={{
                 display: "flex",
                 flexDirection: "column",
-                background: "rgba(15, 23, 42, 0.4)",
+                background: "var(--chat-bg)",
                 borderRadius: "16px",
                 padding: "16px",
               }}
             >
-              <h3 style={{ margin: "0 0 16px 0", fontSize: "1.1rem", color: "#A78BFA" }}>Live Chat</h3>
+              <h3 style={{ margin: "0 0 16px 0", fontSize: "1.1rem", color: "var(--primary)" }}>Live Chat</h3>
 
               <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
                 <select value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)} style={{ flex: 1 }}>
-                  {users.length === 0 && <option value="">No users available</option>}
+                  {usersLoading && <option value="">Loading users...</option>}
+                  {!usersLoading && users.length === 0 && <option value="">No users available</option>}
                   {users.map((item) => (
                     <option key={item.id} value={item.id}>
-                      {item.name} ({item.email})
+                      {item.name}
                     </option>
                   ))}
                 </select>
-                <button type="button" onClick={joinChat} style={{ width: "auto" }}>
-                  Join
+                <button type="button" onClick={joinChat} style={{ width: "auto" }} disabled={usersLoading}>
+                  {usersLoading ? "..." : "Join"}
                 </button>
               </div>
 
@@ -300,7 +413,7 @@ function AppHomePage() {
                 {messages.length === 0 ? (
                   <p
                     style={{
-                      color: "rgba(255,255,255,0.4)",
+                      color: "var(--text-muted)",
                       textAlign: "center",
                       marginTop: "auto",
                       marginBottom: "auto",
@@ -319,7 +432,7 @@ function AppHomePage() {
                         <div
                           style={{
                             fontSize: "0.75rem",
-                            color: "#94A3B8",
+                            color: "var(--text-muted)",
                             marginBottom: "4px",
                             textAlign: isMe ? "right" : "left",
                           }}
@@ -329,8 +442,11 @@ function AppHomePage() {
                         <div
                           style={{
                             background: isMe
-                              ? "linear-gradient(135deg, #4F46E5, #818CF8)"
-                              : "rgba(255, 255, 255, 0.1)",
+                              ? "var(--chat-msg-me-bg)"
+                              : "var(--chat-msg-other-bg)",
+                            color: isMe
+                              ? "var(--chat-msg-me-color)"
+                              : "var(--chat-msg-other-color)",
                             padding: "10px 14px",
                             borderRadius: "12px",
                             borderBottomRightRadius: isMe ? "4px" : "12px",
@@ -343,12 +459,14 @@ function AppHomePage() {
                     );
                   })
                 )}
+                <div ref={chatEndRef} />
               </div>
 
               <div style={{ display: "flex", gap: "8px", marginTop: "auto" }}>
                 <input
                   value={predictedText}
                   onChange={(e) => setPredictedText(e.target.value)}
+                  onKeyDown={handleChatKeyDown}
                   placeholder="Type or translate a sign..."
                   style={{ flex: 1 }}
                 />
@@ -369,14 +487,14 @@ function AppHomePage() {
         ) : (
           <section className="tab-panel">
             <h3 style={{ marginBottom: "4px" }}>ASL Sign Translator</h3>
-            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.875rem", marginBottom: "24px" }}>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "24px" }}>
               Two modes: fingerspell any text letter-by-letter, or watch the full-body stickman sign common ASL words.
             </p>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px", alignItems: "start" }}>
               {/* Left: letter fingerspelling */}
               <div>
-                <h4 style={{ color: "#A78BFA", marginBottom: "12px", fontSize: "0.95rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <h4 style={{ color: "var(--primary)", marginBottom: "12px", fontSize: "0.95rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   Fingerspelling (A–Z)
                 </h4>
                 <ASLStickman />
@@ -384,7 +502,7 @@ function AppHomePage() {
 
               {/* Right: full-body word signing */}
               <div>
-                <h4 style={{ color: "#F472B6", marginBottom: "12px", fontSize: "0.95rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <h4 style={{ color: "var(--secondary)", marginBottom: "12px", fontSize: "0.95rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   Word Signs (full body)
                 </h4>
                 <ASLWordStickman />

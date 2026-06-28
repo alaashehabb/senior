@@ -255,19 +255,19 @@ export default function ASLWordStickman() {
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "14px" }}>
 
       {/* Mode toggle — only show pose-viewer tab if a real pose exists */}
-      <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1px solid rgba(167,139,250,0.35)" }}>
+      <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--btn-secondary-border)" }}>
         <button type="button" onClick={() => setViewMode("canvas")}
           style={{ width:"auto", padding:"6px 14px", fontSize:"0.76rem", border:"none", cursor:"pointer",
-            background: viewMode==="canvas" ? "#7C3AED" : "transparent",
-            color: viewMode==="canvas" ? "#fff" : "rgba(255,255,255,0.5)" }}>
+            background: viewMode==="canvas" ? "var(--stickman-btn-active-bg)" : "transparent",
+            color: viewMode==="canvas" ? "var(--stickman-btn-active-color)" : "var(--stickman-label-color)" }}>
           Canvas stickman
         </button>
         <button type="button" onClick={() => setViewMode("pose-viewer")}
           disabled={!poseUrl}
           title={poseUrl ? "sign.mt pose-viewer (real MediaPipe data)" : "Run: python generate_asl_poses.py to generate"}
           style={{ width:"auto", padding:"6px 14px", fontSize:"0.76rem", border:"none", cursor: poseUrl ? "pointer" : "not-allowed",
-            background: viewMode==="pose-viewer" ? "#7C3AED" : "transparent",
-            color: poseUrl ? (viewMode==="pose-viewer" ? "#fff" : "rgba(255,255,255,0.5)") : "rgba(255,255,255,0.25)" }}>
+            background: viewMode==="pose-viewer" ? "var(--stickman-btn-active-bg)" : "transparent",
+            color: poseUrl ? (viewMode==="pose-viewer" ? "var(--stickman-btn-active-color)" : "var(--stickman-label-color)") : "var(--stickman-btn-inactive-border)" }}>
           {poseUrl ? "sign.mt renderer ✓" : "sign.mt renderer (not ready)"}
         </button>
       </div>
@@ -281,7 +281,7 @@ export default function ASLWordStickman() {
           background="#0F172A"
           style={{
             display: "block", width: `${W}px`, height: `${H}px`,
-            borderRadius: "16px", border: "1px solid rgba(167,139,250,0.3)",
+            borderRadius: "16px", border: "1px solid var(--btn-secondary-border)",
           }}
         />
       ) : (
@@ -289,7 +289,7 @@ export default function ASLWordStickman() {
           style={{
             borderRadius: "16px",
             background: "rgba(15, 23, 42, 0.7)",
-            border: "1px solid rgba(167, 139, 250, 0.3)",
+            border: "1px solid var(--btn-secondary-border)",
             display: "block",
           }}
         />
@@ -301,10 +301,10 @@ export default function ASLWordStickman() {
           <button key={w} type="button" onClick={() => setSelected(w)}
             style={{
               width: "auto", padding: "5px 11px", fontSize: "0.76rem", cursor: "pointer",
-              background: selected === w ? "#7C3AED" : "rgba(255,255,255,0.07)",
-              border: `1px solid ${selected === w ? "#A78BFA" : "rgba(255,255,255,0.12)"}`,
+              background: selected === w ? "var(--stickman-btn-active-bg)" : "var(--stickman-btn-inactive-bg)",
+              border: `1px solid ${selected === w ? "var(--primary)" : "var(--stickman-btn-inactive-border)"}`,
               borderRadius: "8px",
-              color: selected === w ? "#fff" : "rgba(255,255,255,0.65)",
+              color: selected === w ? "var(--stickman-btn-active-color)" : "var(--stickman-btn-inactive-color)",
             }}
           >
             {w}
@@ -314,13 +314,13 @@ export default function ASLWordStickman() {
 
       {/* Controls */}
       <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
-        <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1px solid rgba(167,139,250,0.35)" }}>
+        <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--btn-secondary-border)" }}>
           {["slow", "normal"].map(s => (
             <button key={s} type="button" onClick={() => setSpeed(s)}
               style={{
                 width: "auto", padding: "7px 16px", fontSize: "0.78rem", border: "none",
-                background: speed === s ? "#7C3AED" : "transparent", cursor: "pointer",
-                color: speed === s ? "#fff" : "rgba(255,255,255,0.5)",
+                background: speed === s ? "var(--stickman-btn-active-bg)" : "transparent", cursor: "pointer",
+                color: speed === s ? "var(--stickman-btn-active-color)" : "var(--stickman-label-color)",
               }}
             >
               {s === "slow" ? "🐢 Slow" : "⚡ Normal"}
@@ -331,7 +331,8 @@ export default function ASLWordStickman() {
           onClick={isPlaying ? stopAnim : () => playWord(selected, SPEED_MULT[speed])}
           style={{
             width: "auto", padding: "9px 28px", fontSize: "0.92rem", borderRadius: "9px", cursor: "pointer",
-            background: isPlaying ? "#EF4444" : "#7C3AED",
+            background: isPlaying ? "var(--danger)" : "var(--primary)",
+            color: "#ffffff"
           }}
         >
           {isPlaying ? "◼ Stop" : "▶ Play"}
@@ -339,8 +340,8 @@ export default function ASLWordStickman() {
       </div>
 
       {WORD_ANIMS[selected] && (
-        <p style={{ color: "rgba(255,255,255,0.4)", margin: 0, fontSize: "0.8rem", textAlign: "center" }}>
-          <span style={{ color: "#F472B6", fontWeight: "600" }}>{selected}</span>
+        <p style={{ color: "var(--stickman-label-color)", margin: 0, fontSize: "0.8rem", textAlign: "center" }}>
+          <span style={{ color: "var(--secondary)", fontWeight: "600" }}>{selected}</span>
           {" — "}{WORD_ANIMS[selected].description}
         </p>
       )}

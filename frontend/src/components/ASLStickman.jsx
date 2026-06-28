@@ -192,13 +192,13 @@ export default function ASLStickman() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
-      <p style={{ color: "rgba(255,255,255,0.5)", margin: 0, fontSize: "0.85rem" }}>
+      <p style={{ color: "var(--stickman-label-color)", margin: 0, fontSize: "0.85rem" }}>
         Stickman renderer adapted from{" "}
         <a
           href="https://github.com/sign/translate"
           target="_blank"
           rel="noreferrer"
-          style={{ color: "#A78BFA" }}
+          style={{ color: "var(--primary)" }}
         >
           sign/translate
         </a>{" "}
@@ -233,7 +233,8 @@ export default function ASLStickman() {
           style={{
             width: "auto",
             padding: "10px 18px",
-            background: playing ? "#EF4444" : "#7C3AED",
+            background: playing ? "var(--danger)" : "var(--primary)",
+            color: "#ffffff"
           }}
         >
           {playing ? "Stop" : "Play"}
@@ -241,13 +242,13 @@ export default function ASLStickman() {
       </div>
 
       {letters.length > 0 && (
-        <p style={{ color: "rgba(255,255,255,0.6)", margin: 0, fontSize: "0.85rem" }}>
+        <p style={{ color: "var(--stickman-label-color)", margin: 0, fontSize: "0.85rem" }}>
           Signing:{" "}
           {letters.map((l, i) => (
             <span
               key={i}
               style={{
-                color: i === frameIdx ? "#F472B6" : "rgba(255,255,255,0.4)",
+                color: i === frameIdx ? "var(--secondary)" : "var(--stickman-btn-inactive-color)",
                 fontWeight: i === frameIdx ? "bold" : "normal",
                 marginRight: "3px",
               }}
@@ -267,9 +268,9 @@ export default function ASLStickman() {
           paddingTop: "16px",
         }}
       >
-        <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.8rem", margin: "0 0 10px 0" }}>
+        <p style={{ color: "var(--stickman-label-color)", fontSize: "0.8rem", margin: "0 0 10px 0" }}>
           Load a <code>.pose</code> file from the{" "}
-          <a href="https://github.com/sign/translate" target="_blank" rel="noreferrer" style={{ color: "#A78BFA" }}>
+          <a href="https://github.com/sign/translate" target="_blank" rel="noreferrer" style={{ color: "var(--primary)" }}>
             sign/translate
           </a>{" "}
           ecosystem for full-body animations:

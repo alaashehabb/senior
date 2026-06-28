@@ -122,7 +122,9 @@ def predict_letter(
     landmarks: list[float] | None = None,
 ) -> dict:
     if image_base64:
-        features = _features_from_image(decode_image_base64(image_base64))
+        image_bgr = decode_image_base64(image_base64)
+        print("[ASL] decoded image shape:", image_bgr.shape)
+        features = _features_from_image(image_bgr)
     elif landmarks:
         features = landmarks_list_to_features(landmarks)
     else:
@@ -136,11 +138,14 @@ def predict_letter(
             "message": "No hand detected",
         }
 
+    print("[ASL] features shape:", features.shape, "sample:", features.flatten()[:10].tolist())
     model = _get_model()
     prediction = model.predict(features, verbose=0)[0]
+    print("[ASL] raw model output:", prediction.tolist())
     class_idx = int(np.argmax(prediction))
     confidence = float(prediction[class_idx])
     label = CLASS_LABELS[class_idx]
+    print("[ASL] predicted class idx:", class_idx, "label:", label, "confidence:", confidence)
 
     if confidence < MIN_CONFIDENCE or label == "nothing":
         return {

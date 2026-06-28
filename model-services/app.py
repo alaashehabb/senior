@@ -31,6 +31,15 @@ def health():
     return {"status": "ok", "service": "model-services"}
 
 
+@app.get("/")
+def root():
+    return {
+        "status": "ok",
+        "service": "model-services",
+        "message": "Model service is running. Use /predict or /health.",
+    }
+
+
 class PredictRequest(BaseModel):
     language: str
     mode: str
@@ -76,8 +85,13 @@ def predict(payload: PredictRequest):
     if not payload.landmarks and not payload.imageBase64:
         return {"message": "landmarks or imageBase64 is required"}
 
-    text = (AR_LETTERS if language == "ar" else EN_LETTERS)[0] if mode == "letters" \
-        else (AR_WORDS if language == "ar" else EN_WORDS)[0]
+    if mode == "words":
+        return {
+            "message": "Words mode is not implemented by the model service. Only letters mode is supported currently.",
+            "source": "model-service",
+        }
+
+    text = (AR_LETTERS if language == "ar" else EN_LETTERS)[0]
     return {"prediction": {"text": text, "confidence": 0.85, "source": "mock"}}
 
 
@@ -109,6 +123,12 @@ def get_pose(word: str):
             "Cache-Control": "no-cache",
         },
     )
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run("app:app", host="127.0.0.1", port=8000)
 
 
 @app.head("/api/poses/{word}")

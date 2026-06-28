@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 
 function LandingPage() {
   const { isAuthenticated, login, register } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -43,8 +45,18 @@ function LandingPage() {
   return (
     <main className="page-shell">
       <div className="card">
-        <h1>Welcome to SLR Chat App</h1>
-        <p>Sign language letters and words assistant with realtime chat.</p>
+        <div className="page-header">
+          <div className="logo-row">
+            <img src="/signbridge-logo.png" className="site-logo" alt="SignBridge Logo" />
+            <div>
+              <h1 style={{ fontSize: "2rem", margin: 0 }}>SignBridge</h1>
+              <p className="logo-tagline" style={{ margin: 0 }}>Sign language assistant with realtime chat</p>
+            </div>
+          </div>
+          <button type="button" className="theme-toggle" onClick={toggleTheme}>
+            {theme === "dark" ? "Light mode" : "Dark mode"}
+          </button>
+        </div>
 
         <div className="mode-switch">
           <button

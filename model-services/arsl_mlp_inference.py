@@ -33,8 +33,8 @@ ARABIC_MAP = {
 }
 
 MIN_CONFIDENCE = 0.75
-MP_DETECTION_CONFIDENCE = 0.70
-MP_TRACKING_CONFIDENCE = 0.65
+MP_DETECTION_CONFIDENCE = 0.50
+MP_TRACKING_CONFIDENCE = 0.50
 
 _model = None
 _hands = None
@@ -97,7 +97,9 @@ def predict_letter(
     landmarks: list[float] | None = None,
 ) -> dict:
     if image_base64:
-        features = _features_from_image(decode_image_base64(image_base64))
+        image_bgr = decode_image_base64(image_base64)
+        print("[ArSL] decoded image shape:", image_bgr.shape)
+        features = _features_from_image(image_bgr)
     elif landmarks:
         features = landmarks_list_to_features(landmarks)
     else:
@@ -111,12 +113,15 @@ def predict_letter(
             "message": "No hand detected",
         }
 
+    print("[ArSL] features shape:", features.shape, "sample:", features.flatten()[:10].tolist())
     model = _get_model()
     prediction = model.predict(features, verbose=0)[0]
+    print("[ArSL] raw model output:", prediction.tolist())
     class_idx = int(np.argmax(prediction))
     confidence = float(prediction[class_idx])
     raw_label = CLASS_LABELS[class_idx] if class_idx < len(CLASS_LABELS) else "nothing"
     text = ARABIC_MAP.get(raw_label, raw_label)
+    print("[ArSL] predicted class idx:", class_idx, "label:", raw_label, "text:", text, "confidence:", confidence)
 
     if confidence < MIN_CONFIDENCE:
         return {
