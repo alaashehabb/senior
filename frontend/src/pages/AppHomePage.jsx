@@ -23,6 +23,12 @@ function AppHomePage() {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const socketRef = useRef(null);
+  const isRecordingRef = useRef(false);
+
+  // Letters mode stabilization state
+  const letterHistoryRef = useRef([]);
+  const lastLetterCommitTimeRef = useRef(0);
+  const lastLetterRef = useRef("");
 
   const stopCamera = () => {
     if (streamRef.current) {
@@ -66,36 +72,128 @@ function AppHomePage() {
     return canvas.toDataURL("image/jpeg", 0.85);
   };
 
-  const handlePredict = async () => {
-    const imageBase64 = captureImageBase64();
-    if (!imageBase64) {
+  const toggleRecording = () => {
+    if (mode === "words") {
+      if (isRecordingRef.current) {
+        stopRecording();
+      } else {
+        startRecording();
+      }
+    } else {
+      // Letters mode remains a single click
+      startRecording();
+    }
+  };
+
+  const startRecording = async () => {
+    if (!cameraOn) {
       setStatus("Start camera first, then click Translate.");
       return;
     }
 
+    // Clear backend WLASL buffer on start
+    if (mode === "words") {
+       try {
+         await api.post("/predict", { language, mode, imageBase64: "CLEAR" });
+       } catch (e) {}
+    }
+
+    isRecordingRef.current = true;
     setSending(true);
-    setStatus("Translating sign...");
-    try {
-      const res = await api.post("/predict", { language, mode, imageBase64 });
-      const prediction = res.data?.prediction || {};
-      const text = prediction.text || "";
-      if (prediction.action === "delete") {
-        setPredictedText((prev) => prev.slice(0, -1));
-        setStatus(`Deleted last character (${Math.round((prediction.confidence || 0) * 100)}%)`);
-        return;
+    setStatus("Recording sign... Sign now! (Click again to stop)");
+
+    // Reset letters stabilization
+    letterHistoryRef.current = [];
+    lastLetterCommitTimeRef.current = 0;
+    lastLetterRef.current = "";
+
+    while (isRecordingRef.current) {
+      const imageBase64 = captureImageBase64();
+      if (!imageBase64) {
+        await new Promise((r) => setTimeout(r, 100));
+        continue;
       }
-      if (!text) {
-        setStatus(prediction.message || "No sign detected. Try again.");
-        return;
+
+      try {
+        const res = await api.post("/predict", { language, mode, imageBase64 });
+        const prediction = res.data?.prediction || {};
+
+        if (mode === "words") {
+          // Backend handles words stabilization
+          if (prediction.status === "buffering") {
+            setStatus(`Recording... ${prediction.frames_collected}/${prediction.frames_needed} frames`);
+          } else if (prediction.status === "committed") {
+            const text = prediction.text || "";
+            if (text && text !== "(Low Confidence)") {
+              // Auto-spacing after word
+              setPredictedText((prev) => (prev ? `${prev.trim()} ${text} ` : `${text} `));
+            }
+            setStatus(`Word added: ${text} (${Math.round((prediction.confidence || 0) * 100)}%)`);
+          }
+        } else {
+          // Frontend handles letters stabilization (simulate backend logic)
+          const text = prediction.text || "";
+          const conf = prediction.confidence || 0;
+          
+          if (text && conf > 0.75 && text !== "nothing") {
+             letterHistoryRef.current.push(text);
+          }
+          
+          // Keep window at 15
+          if (letterHistoryRef.current.length > 15) {
+             letterHistoryRef.current.shift();
+          }
+
+          const now = Date.now();
+          if (letterHistoryRef.current.length >= 10) {
+             // Majority vote
+             const counts = {};
+             let maxChar = "";
+             let maxCount = 0;
+             letterHistoryRef.current.forEach(c => {
+               counts[c] = (counts[c] || 0) + 1;
+               if (counts[c] > maxCount) {
+                 maxCount = counts[c];
+                 maxChar = c;
+               }
+             });
+
+             // 11/15 is roughly 73%. Using 8/10 here.
+             if (maxCount >= 8 && (now - lastLetterCommitTimeRef.current) > 1200) {
+                if (maxChar !== lastLetterRef.current || (now - lastLetterCommitTimeRef.current) > 2400) {
+                   if (maxChar === "del") {
+                      setPredictedText((prev) => prev.slice(0, -1));
+                      setStatus(`Deleted last character`);
+                   } else if (maxChar === "space") {
+                      setPredictedText((prev) => `${prev} `);
+                      setStatus(`Added space`);
+                   } else {
+                      // No auto-space for letters, just append to form words
+                      setPredictedText((prev) => `${prev}${maxChar}`);
+                      setStatus(`Letter added: ${maxChar}`);
+                   }
+                   lastLetterCommitTimeRef.current = now;
+                   lastLetterRef.current = maxChar;
+                   letterHistoryRef.current = []; // flush buffer
+                }
+             }
+          }
+        }
+      } catch (err) {
+        setStatus(err.response?.data?.message || "Translation failed");
       }
-      setPredictedText((prev) => (prev ? `${prev}${text}` : text));
-      setStatus(
-        `Sign translated: ${text} (${Math.round((prediction.confidence || 0) * 100)}%)`
-      );
-    } catch (err) {
-      setStatus(err.response?.data?.message || "Translation failed");
-    } finally {
-      setSending(false);
+
+      // Target ~30 FPS loop
+      await new Promise((r) => setTimeout(r, 33));
+    }
+    setSending(false);
+  };
+
+  const stopRecording = () => {
+    isRecordingRef.current = false;
+    setSending(false);
+    if (mode === "words") {
+      setStatus("Stopped recording.");
     }
   };
 
@@ -249,8 +347,14 @@ function AppHomePage() {
                 <button type="button" onClick={stopCamera}>
                   End Camera
                 </button>
-                <button type="button" onClick={handlePredict} disabled={sending}>
-                  {sending ? "Translating..." : "Translate Sign"}
+                <button 
+                  type="button" 
+                  onClick={toggleRecording}
+                  disabled={false}
+                  className="translate-btn"
+                  style={isRecordingRef.current ? { background: "#EF4444" } : {}}
+                >
+                  {isRecordingRef.current ? "Stop Recording" : "Start Recording"}
                 </button>
               </div>
 

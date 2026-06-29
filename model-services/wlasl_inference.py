@@ -1,6 +1,7 @@
 import base64
 import os
 import sys
+import time
 from collections import deque
 from pathlib import Path
 
@@ -17,16 +18,30 @@ CLASS_LIST_PATH = SCRIPT_DIR / "models" / "wlasl" / "wlasl_class_list.txt"
 # WLASL Configuration
 NUM_CLASSES = 100
 FRAME_BUFFER_SIZE = 32
-CONFIDENCE_THRESHOLD = 0.50
+
+# Stabilization & Cooldown Logic
+STAB_WINDOW = 10         # Number of recent predictions to consider
+STAB_THRESH = 6          # Minimum matches required to commit
+MIN_CONFIDENCE = 0.50    # Minimum confidence to accept a prediction
+HOLD_COOLDOWN = 1.2      # Seconds to lock out after committing a word
 
 # Global State
 _model = None
 _class_names = []
 _device = None
 
-# Session Buffers: map session_id -> deque of preprocessed frames
+# Session State: maps session_id -> dict of state
 _active_sessions = {}
 
+def _get_session_state(session_id: str):
+    if session_id not in _active_sessions:
+        _active_sessions[session_id] = {
+            "frames": deque(maxlen=FRAME_BUFFER_SIZE),
+            "predictions": deque(maxlen=STAB_WINDOW),
+            "last_commit_time": 0.0,
+            "last_word": ""
+        }
+    return _active_sessions[session_id]
 
 def _load_class_names():
     names = {}
@@ -66,7 +81,6 @@ def _init_model():
 
 
 def _preprocess_frame(image_base64: str) -> np.ndarray:
-    """Decodes base64 and transforms image to match WLASL training data."""
     if image_base64.startswith("data:image"):
         image_base64 = image_base64.split(",")[1]
 
@@ -77,38 +91,38 @@ def _preprocess_frame(image_base64: str) -> np.ndarray:
     if frame is None:
         raise ValueError("Failed to decode image")
 
-    # BGR to RGB
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-    # Resize shorter side to 256
     h, w = rgb.shape[:2]
     scale = 256.0 / min(h, w)
     new_h, new_w = int(round(h * scale)), int(round(w * scale))
     rgb = cv2.resize(rgb, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
 
-    # Center crop 224x224
     cy, cx = new_h // 2, new_w // 2
     rgb = rgb[cy - 112: cy + 112, cx - 112: cx + 112]
-
-    # Normalize to [-1, 1]
     rgb = (rgb.astype(np.float32) / 255.0) * 2.0 - 1.0
 
-    # Shape: (3, 224, 224)
     return rgb.transpose(2, 0, 1)
 
 
 def predict_word(session_id: str, image_base64: str):
     """
-    Appends the frame to the user's session buffer. 
-    If the buffer reaches FRAME_BUFFER_SIZE, runs inference and clears the buffer.
-    Returns: dict with prediction or 'loading' status.
+    Appends the frame to the user's session buffer and runs inference if full.
+    Uses majority voting and cooldown to prevent repetition.
     """
     _init_model()
+    
+    # Handle special "clear" or "stop" signals if needed (though continuous doesn't strictly need it)
+    if image_base64 == "CLEAR":
+        _active_sessions[session_id] = {
+            "frames": deque(maxlen=FRAME_BUFFER_SIZE),
+            "predictions": deque(maxlen=STAB_WINDOW),
+            "last_commit_time": 0.0,
+            "last_word": ""
+        }
+        return {"status": "cleared"}
 
-    if session_id not in _active_sessions:
-        _active_sessions[session_id] = deque(maxlen=FRAME_BUFFER_SIZE)
-
-    buffer = _active_sessions[session_id]
+    state = _get_session_state(session_id)
+    buffer = state["frames"]
 
     try:
         pf = _preprocess_frame(image_base64)
@@ -116,20 +130,17 @@ def predict_word(session_id: str, image_base64: str):
     except Exception as e:
         return {"error": f"Frame error: {e}"}
 
-    # If we don't have enough frames yet, return a loading state
+    # Not enough frames yet
     if len(buffer) < FRAME_BUFFER_SIZE:
         return {
-            "text": "Waiting for frames...", 
-            "confidence": len(buffer) / FRAME_BUFFER_SIZE,
-            "source": "wlasl",
             "status": "buffering",
             "frames_collected": len(buffer),
             "frames_needed": FRAME_BUFFER_SIZE
         }
 
-    # We have exactly FRAME_BUFFER_SIZE frames, run inference!
+    # We have enough frames, run inference!
     arr = np.stack(list(buffer), axis=1)  # (3, T, 224, 224)
-    tensor = torch.from_numpy(arr).unsqueeze(0).to(_device)  # (1, 3, T, 224, 224)
+    tensor = torch.from_numpy(arr).unsqueeze(0).to(_device)
 
     with torch.no_grad():
         logits = _model(tensor)
@@ -140,20 +151,43 @@ def predict_word(session_id: str, image_base64: str):
     top_conf = float(probs_np[top_idx])
     word = _class_names[top_idx]
 
-    # Clear buffer after successful prediction to start collecting for the next word
-    buffer.clear()
+    # Stabilization Logic
+    state["predictions"].append(top_idx)
+    
+    now = time.time()
+    
+    # Check if we have enough predictions to vote
+    if len(state["predictions"]) == STAB_WINDOW:
+        # Get most frequent prediction index
+        preds_list = list(state["predictions"])
+        most_common_idx = max(set(preds_list), key=preds_list.count)
+        count = preds_list.count(most_common_idx)
+        
+        # Check thresholds
+        if count >= STAB_THRESH and top_conf >= MIN_CONFIDENCE:
+            candidate_word = _class_names[most_common_idx]
+            
+            # Check cooldown and repetition
+            if (now - state["last_commit_time"]) > HOLD_COOLDOWN:
+                if candidate_word != state["last_word"] or (now - state["last_commit_time"]) > (HOLD_COOLDOWN * 2):
+                    # Commit the word!
+                    state["last_commit_time"] = now
+                    state["last_word"] = candidate_word
+                    state["predictions"].clear()
+                    buffer.clear() # Clear frames so we don't immediately re-detect using same video chunk
+                    
+                    return {
+                        "status": "committed",
+                        "text": candidate_word,
+                        "confidence": top_conf,
+                        "source": "wlasl"
+                    }
 
-    if top_conf < CONFIDENCE_THRESHOLD:
-        return {
-            "text": "(Low Confidence)",
-            "confidence": top_conf,
-            "source": "wlasl",
-            "status": "completed"
-        }
-
+    # If not committed, just return buffering state
     return {
-        "text": word,
-        "confidence": top_conf,
-        "source": "wlasl",
-        "status": "completed"
+        "status": "buffering",
+        "frames_collected": len(buffer),
+        "frames_needed": FRAME_BUFFER_SIZE,
+        "current_guess": word,
+        "guess_confidence": top_conf
     }
