@@ -47,9 +47,9 @@ function LandingPage() {
       <div className="card">
         <div className="page-header">
           <div className="logo-row">
-            <img src="/signbridge-logo.png" className="site-logo" alt="SignBridge Logo" />
+            <img src="/eshara-logo.png" className="site-logo" alt="Eshara Logo" />
             <div>
-              <h1 style={{ fontSize: "2rem", margin: 0 }}>SignBridge</h1>
+              <h1 style={{ fontSize: "2rem", margin: 0 }}>Eshara</h1>
               <p className="logo-tagline" style={{ margin: 0 }}>Sign language assistant with realtime chat</p>
             </div>
           </div>

@@ -90,16 +90,16 @@ function AppHomePage() {
     return new Promise((resolve, reject) => {
       const video = videoRef.current;
       if (!video || !video.srcObject) return resolve(null);
-      
+
       try {
         const stream = video.srcObject;
         const mediaRecorder = new MediaRecorder(stream);
         const chunks = [];
-        
+
         mediaRecorder.ondataavailable = (e) => {
           if (e.data && e.data.size > 0) chunks.push(e.data);
         };
-        
+
         mediaRecorder.onstop = () => {
           const blob = new Blob(chunks);
           const reader = new FileReader();
@@ -107,7 +107,7 @@ function AppHomePage() {
           reader.onloadend = () => resolve(reader.result);
           reader.onerror = () => reject(new Error("Failed to read video blob"));
         };
-        
+
         mediaRecorder.start();
         setTimeout(() => {
           if (mediaRecorder.state === "recording") {
@@ -122,7 +122,7 @@ function AppHomePage() {
 
   const handlePredict = async () => {
     let payload = { language, mode };
-    
+
     if (mode === "words") {
       setSending(true);
       setStatus("Recording sign for 2.5 seconds...");
@@ -315,7 +315,7 @@ function AppHomePage() {
       <div className="card wide">
         <div className="header-row">
           <div className="logo-row header-logo-row">
-            <img src="/signbridge-logo.png" className="site-logo" alt="SignBridge Logo" />
+            <img src="/eshara-logo.png" className="site-logo" alt="Eshara Logo" />
             <div>
               <h2 style={{ margin: 0 }}>Hello, {user?.name}</h2>
               <p className="logo-tagline" style={{ margin: 0 }}>Sign language letters and chat assistant</p>
