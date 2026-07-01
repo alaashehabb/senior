@@ -1,6 +1,6 @@
 async function predict(req, res) {
   try {
-    const { language, mode, landmarks, imageBase64 } = req.body;
+    const { language, mode, landmarks, imageBase64, videoBase64 } = req.body;
 
     if (!language || !mode) {
       return res.status(400).json({
@@ -8,9 +8,9 @@ async function predict(req, res) {
       });
     }
 
-    if (!landmarks && !imageBase64) {
+    if (!landmarks && !imageBase64 && !videoBase64) {
       return res.status(400).json({
-        message: "landmarks or imageBase64 is required",
+        message: "landmarks, imageBase64, or videoBase64 is required",
       });
     }
 
@@ -21,6 +21,7 @@ async function predict(req, res) {
       mode,
       hasLandmarks: Boolean(landmarks),
       hasImage: Boolean(imageBase64),
+      hasVideo: Boolean(videoBase64),
     });
 
     try {
@@ -29,7 +30,7 @@ async function predict(req, res) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ language, mode, landmarks, imageBase64 }),
+        body: JSON.stringify({ language, mode, landmarks, imageBase64, videoBase64 }),
       });
 
       if (!response.ok) {

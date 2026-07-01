@@ -45,6 +45,7 @@ class PredictRequest(BaseModel):
     mode: str
     landmarks: list[float] | None = None
     imageBase64: str | None = None
+    videoBase64: str | None = None
 
 
 @app.post("/predict")
@@ -82,14 +83,35 @@ def predict(payload: PredictRequest):
         except Exception as exc:
             return {"message": f"ArSL model inference failed: {exc}"}
 
-    if not payload.landmarks and not payload.imageBase64:
-        return {"message": "landmarks or imageBase64 is required"}
+    if language == "ar" and mode == "words":
+        if not payload.videoBase64:
+            return {"prediction": {"text": "", "message": "videoBase64 is required for Arabic words mode (video clip needed)"}}
+        try:
+            from arsl_word_inference import predict_word
+            
+            result = predict_word(video_base64=payload.videoBase64)
+            return {"prediction": result}
+        except FileNotFoundError as exc:
+            return {"prediction": {"text": "", "message": str(exc)}}
+        except Exception as exc:
+            return {"prediction": {"text": "", "message": f"Inference failed: {exc}"}}
+            
+    if not payload.landmarks and not payload.imageBase64 and not payload.videoBase64:
+        return {"message": "landmarks, imageBase64, or videoBase64 is required"}
 
-    if mode == "words":
-        return {
-            "message": "Words mode is not implemented by the model service. Only letters mode is supported currently.",
-            "source": "model-service",
-        }
+    if language == "en" and mode == "words":
+        if not payload.videoBase64:
+            return {"message": "videoBase64 is required for English words mode"}
+            
+        try:
+            from en_word_inference import predict_word
+            
+            result = predict_word(video_base64=payload.videoBase64)
+            return {"prediction": result}
+        except FileNotFoundError as exc:
+            return {"prediction": {"text": "", "message": str(exc)}}
+        except Exception as exc:
+            return {"prediction": {"text": "", "message": f"Inference failed: {exc}"}}
 
     text = (AR_LETTERS if language == "ar" else EN_LETTERS)[0]
     return {"prediction": {"text": text, "confidence": 0.85, "source": "mock"}}

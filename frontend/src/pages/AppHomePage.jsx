@@ -86,17 +86,72 @@ function AppHomePage() {
     return canvas.toDataURL("image/jpeg", 0.85);
   };
 
+  const recordVideoBase64 = (durationMs) => {
+    return new Promise((resolve, reject) => {
+      const video = videoRef.current;
+      if (!video || !video.srcObject) return resolve(null);
+      
+      try {
+        const stream = video.srcObject;
+        const mediaRecorder = new MediaRecorder(stream);
+        const chunks = [];
+        
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) chunks.push(e.data);
+        };
+        
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(chunks);
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error("Failed to read video blob"));
+        };
+        
+        mediaRecorder.start();
+        setTimeout(() => {
+          if (mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+          }
+        }, durationMs);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  };
+
   const handlePredict = async () => {
-    const imageBase64 = captureImageBase64();
-    if (!imageBase64) {
-      setStatus("Start camera first, then click Translate.");
-      return;
+    let payload = { language, mode };
+    
+    if (mode === "words") {
+      setSending(true);
+      setStatus("Recording sign for 2.5 seconds...");
+      try {
+        const videoBase64 = await recordVideoBase64(2500);
+        if (!videoBase64) {
+          setStatus("Start camera first, then click Translate.");
+          setSending(false);
+          return;
+        }
+        payload.videoBase64 = videoBase64;
+      } catch (err) {
+        setStatus("Could not record video.");
+        setSending(false);
+        return;
+      }
+    } else {
+      const imageBase64 = captureImageBase64();
+      if (!imageBase64) {
+        setStatus("Start camera first, then click Translate.");
+        return;
+      }
+      payload.imageBase64 = imageBase64;
+      setSending(true);
     }
 
-    setSending(true);
     setStatus("Translating sign...");
     try {
-      const res = await api.post("/predict", { language, mode, imageBase64 });
+      const res = await api.post("/predict", payload);
       const prediction = res.data?.prediction || {};
       const text = prediction.text || "";
       if (prediction.action === "delete") {
@@ -105,10 +160,13 @@ function AppHomePage() {
         return;
       }
       if (!text) {
-        setStatus(prediction.message || "No sign detected. Try again.");
+        setStatus(prediction.message || res.data?.message || "No sign detected. Try again.");
         return;
       }
-      setPredictedText((prev) => (prev ? `${prev}${text}` : text));
+      setPredictedText((prev) => {
+        const appended = mode === "words" ? `${text} ` : text;
+        return prev ? `${prev}${appended}` : appended;
+      });
       setStatus(
         `Sign translated: ${text} (${Math.round((prediction.confidence || 0) * 100)}%)`
       );
@@ -231,7 +289,7 @@ function AppHomePage() {
     const token = localStorage.getItem("slr_token");
     if (!token) return undefined;
 
-    const socket = io("http://localhost:5000", { auth: { token } });
+    const socket = io("http://localhost:3000", { auth: { token } });
 
     socket.on("connect", () => {
       setChatStatus("Connected. Select a user to chat.");
