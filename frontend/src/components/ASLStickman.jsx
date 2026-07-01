@@ -1,210 +1,210 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { ASL_POSES, HAND_CONNECTIONS } from "../utils/aslHandPoses";
-import { defineCustomElements } from "pose-viewer/loader";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ASL_POSES, ASL_HINTS, MOTION_LETTERS } from "../utils/aslHandPoses";
+import { COLORS, EASE, drawHand, lerpPose } from "../utils/aslRenderer";
 
-const W = 320;
-const H = 460;
+const W = 340;
+const H = 430;
 
-// ── Body drawing ────────────────────────────────────────────────────────────
+// Where the signing hand's wrist sits, and how big the hand is drawn.
+const WRIST = [232, 250];
+const HAND_SCALE = 156;
 
-function drawBody(ctx, highlightHand = true) {
-  ctx.strokeStyle = "#A78BFA";
-  ctx.lineWidth = 3;
+// Timing (ms)
+const MORPH = 260; // transition between two letters
+const HOLD = 620;  // freeze on each letter so it can be read
+
+const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+// ── Static body: a stick figure with the right arm raised to present the hand ──
+function drawBody(ctx) {
   ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = COLORS.body;
+  ctx.lineWidth = 3.5;
 
-  const cx = W / 2;
-
-  // head
+  // head + torso + left arm + legs — one purple pass
   ctx.beginPath();
-  ctx.arc(cx, 52, 26, 0, Math.PI * 2);
-  ctx.strokeStyle = "#A78BFA";
+  ctx.arc(150, 66, 26, 0, Math.PI * 2);          // head
+  ctx.moveTo(150, 92);  ctx.lineTo(150, 250);    // torso
+  ctx.moveTo(150, 120); ctx.lineTo(104, 178);    // left upper arm
+  ctx.lineTo(96, 232);                            // left forearm (hanging)
+  ctx.moveTo(150, 250); ctx.lineTo(120, 340);    // left thigh
+  ctx.lineTo(116, 414);                           // left shin
+  ctx.moveTo(150, 250); ctx.lineTo(184, 340);    // right thigh
+  ctx.lineTo(190, 414);                           // right shin
   ctx.stroke();
 
-  // torso
-  line(ctx, cx, 78, cx, 200);
-
-  // left arm
-  line(ctx, cx, 100, cx - 55, 165);
-  line(ctx, cx - 55, 165, cx - 65, 210);
-
-  // right arm (hand side — slightly raised)
-  ctx.strokeStyle = highlightHand ? "#F472B6" : "#A78BFA";
-  line(ctx, cx, 100, cx + 55, 152);
-  line(ctx, cx + 55, 152, cx + 52, 192);
-  ctx.strokeStyle = "#A78BFA";
-
-  // legs
-  line(ctx, cx, 200, cx - 35, 290);
-  line(ctx, cx, 200, cx + 35, 290);
-  line(ctx, cx - 35, 290, cx - 30, 370);
-  line(ctx, cx + 35, 290, cx + 30, 370);
-}
-
-function line(ctx, x1, y1, x2, y2) {
+  // right arm raised toward the hand — accent colour
+  ctx.strokeStyle = COLORS.activeArm;
   ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
+  ctx.moveTo(150, 120);
+  ctx.lineTo(210, 176);          // elbow
+  ctx.lineTo(WRIST[0], WRIST[1]); // wrist
   ctx.stroke();
 }
 
-// ── Hand drawing (ported from pose-viewer canvas renderer) ──────────────────
-
-// Map normalized [0,1] hand coords into the canvas hand region.
-// Hand floats near the right shoulder/wrist area.
-const HAND_REGION = { x: 135, y: 168, w: 168, h: 268 };
-
-function mapPt([nx, ny]) {
-  return [
-    HAND_REGION.x + nx * HAND_REGION.w,
-    HAND_REGION.y + ny * HAND_REGION.h,
-  ];
-}
-
-function drawHand(ctx, landmarks, alpha = 1) {
-  if (!landmarks) return;
-
-  // limbs — same approach as pose-viewer renderLimb
-  ctx.lineWidth = 3;
-  ctx.lineCap = "round";
-
-  // All bones in one stroke call
-  ctx.strokeStyle = `rgba(248, 113, 113, ${alpha})`;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  for (const [a, b] of HAND_CONNECTIONS) {
-    const [x1, y1] = mapPt(landmarks[a]);
-    const [x2, y2] = mapPt(landmarks[b]);
-    ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+// J and Z are traced in the air. Return a small wrist offset over hold progress.
+function motionOffset(letter, p) {
+  if (letter === "J") {
+    // hook down-and-curl to the left
+    return [Math.sin(p * Math.PI) * 4, p < 0.6 ? p * 26 : (1 - p) * 26 * 1.5];
   }
-  ctx.stroke();
-
-  // All joints in one fill call
-  ctx.fillStyle = `rgba(251, 191, 36, ${alpha})`;
-  ctx.beginPath();
-  for (const pt of landmarks) {
-    const [x, y] = mapPt(pt);
-    ctx.moveTo(x + 3.5, y);
-    ctx.arc(x, y, 3.5, 0, 6.283);
+  if (letter === "Z") {
+    // trace a Z: right, diagonal, right
+    if (p < 0.33) return [p / 0.33 * 34 - 17, -12];
+    if (p < 0.66) return [17 - (p - 0.33) / 0.33 * 34, (p - 0.33) / 0.33 * 24 - 12];
+    return [(p - 0.66) / 0.34 * 34 - 17, 12];
   }
-  ctx.fill();
+  return [0, 0];
 }
-
-// ── Letter label ─────────────────────────────────────────────────────────────
-
-function drawLabel(ctx, letter, frameIdx, total) {
-  ctx.fillStyle = "rgba(167, 139, 250, 0.9)";
-  ctx.font = "bold 38px system-ui";
-  ctx.textAlign = "center";
-  ctx.fillText(letter === " " ? "SPACE" : letter, W / 2, H - 18);
-
-  // progress dots
-  const dotR = 4, gap = 12;
-  const startX = W / 2 - ((total - 1) * gap) / 2;
-  for (let i = 0; i < total; i++) {
-    ctx.beginPath();
-    ctx.arc(startX + i * gap, H - 52, dotR, 0, Math.PI * 2);
-    ctx.fillStyle = i === frameIdx ? "#F472B6" : "rgba(255,255,255,0.25)";
-    ctx.fill();
-  }
-}
-
-// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ASLStickman() {
   const canvasRef = useRef(null);
+  const ctxRef = useRef(null);
+  const rafRef = useRef(null);
+  const frameIdxRef = useRef(-1);
+
   const [inputText, setInputText] = useState("");
-  const [playing, setPlaying] = useState(false);
-  const [frameIdx, setFrameIdx] = useState(0);
   const [letters, setLetters] = useState([]);
-  const intervalRef = useRef(null);
+  const [frameIdx, setFrameIdx] = useState(-1); // which letter is showing (-1 = idle)
+  const [playing, setPlaying] = useState(false);
+  const [preview, setPreview] = useState(null); // single letter previewed from the grid
 
   const getLetters = (text) =>
-    text
-      .toUpperCase()
-      .split("")
-      .filter((c) => c === " " || ASL_POSES[c]);
+    text.toUpperCase().split("").filter((c) => c === " " || ASL_POSES[c]);
 
-  // Draw the current frame
-  const drawFrame = useCallback((lts, idx) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+  // ── One frame of the scene ──────────────────────────────────────────────────
+  const drawScene = useCallback((pose, { letter, idx, total, label, offset = [0, 0] } = {}) => {
+    const ctx = ctxRef.current;
+    if (!ctx) return;
     ctx.clearRect(0, 0, W, H);
+    drawBody(ctx);
+    drawHand(ctx, pose, { ox: WRIST[0] + offset[0], oy: WRIST[1] + offset[1], scale: HAND_SCALE });
 
-    const letter = lts[idx];
-    drawBody(ctx, true);
-    drawHand(ctx, letter ? ASL_POSES[letter] : null);
-    if (letter) drawLabel(ctx, letter, idx, lts.length);
+    // Big letter
+    if (letter) {
+      ctx.fillStyle = COLORS.body;
+      ctx.font = "bold 40px Outfit, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(letter === " " ? "␣" : letter, 66, 92);
+    }
+
+    // Caption
+    if (label) {
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.font = "13px Outfit, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(label, W / 2, H - 16);
+    }
+
+    // Progress dots
+    if (total > 1) {
+      const gap = Math.min(14, (W - 80) / total);
+      const startX = W / 2 - ((total - 1) * gap) / 2;
+      for (let i = 0; i < total; i++) {
+        ctx.beginPath();
+        ctx.arc(startX + i * gap, H - 40, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = i === idx ? COLORS.activeArm : "rgba(255,255,255,0.22)";
+        ctx.fill();
+      }
+    }
   }, []);
 
-  // Idle animation: show open hand
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || playing) return;
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, W, H);
-    drawBody(ctx, false);
-    drawHand(ctx, ASL_POSES[" "]);
+  // ── Idle / preview frame (no animation loop) ───────────────────────────────
+  const drawIdle = useCallback(() => {
+    if (preview && ASL_POSES[preview]) {
+      drawScene(ASL_POSES[preview], {
+        letter: preview,
+        label: ASL_HINTS[preview] || "",
+      });
+      return;
+    }
+    drawScene(ASL_POSES[" "], { label: "Type a word, or tap a letter below" });
+  }, [preview, drawScene]);
 
-    ctx.fillStyle = "rgba(255,255,255,0.25)";
-    ctx.font = "13px system-ui";
-    ctx.textAlign = "center";
-    ctx.fillText("Type a word and press Play", W / 2, H - 18);
-  }, [playing, drawFrame]);
-
-  // Play through letters
-  const handlePlay = () => {
-    const lts = getLetters(inputText);
-    if (lts.length === 0) return;
-    clearInterval(intervalRef.current);
+  // ── Playback ────────────────────────────────────────────────────────────────
+  const play = useCallback((lts) => {
+    cancelAnimationFrame(rafRef.current);
+    setPreview(null);
     setLetters(lts);
-    setFrameIdx(0);
-    drawFrame(lts, 0);
     setPlaying(true);
 
     let i = 0;
-    intervalRef.current = setInterval(() => {
-      i += 1;
-      if (i >= lts.length) {
-        clearInterval(intervalRef.current);
-        setPlaying(false);
-        return;
+    let start = null;
+    const total = lts.length;
+
+    const step = (now) => {
+      if (start === null) start = now;
+      const t = now - start;
+      const letter = lts[i];
+      const prev = i === 0 ? ASL_POSES[" "] : ASL_POSES[lts[i - 1]] || ASL_POSES[" "];
+      const target = ASL_POSES[letter] || ASL_POSES[" "];
+
+      if (t < MORPH) {
+        // morph from previous letter to this one
+        const k = EASE.easeInOut(t / MORPH);
+        drawScene(lerpPose(prev, target, k), {
+          letter, idx: i, total, label: ASL_HINTS[letter] || "",
+        });
+      } else {
+        // hold — with J/Z air-tracing motion if applicable
+        const hp = Math.min(1, (t - MORPH) / HOLD);
+        const offset = MOTION_LETTERS.includes(letter) ? motionOffset(letter, hp) : [0, 0];
+        drawScene(target, {
+          letter, idx: i, total, label: ASL_HINTS[letter] || "", offset,
+        });
       }
-      setFrameIdx(i);
-      drawFrame(lts, i);
-    }, 850);
+
+      if (frameIdxRef.current !== i) {
+        frameIdxRef.current = i;
+        setFrameIdx(i);
+      }
+
+      if (t >= MORPH + HOLD) {
+        i += 1;
+        start = now;
+        if (i >= total) {
+          setPlaying(false);
+          setFrameIdx(-1);
+          frameIdxRef.current = -1;
+          return; // stop the loop; idle effect repaints
+        }
+      }
+      rafRef.current = requestAnimationFrame(step);
+    };
+    rafRef.current = requestAnimationFrame(step);
+  }, [drawScene]);
+
+  const handlePlay = () => {
+    const lts = getLetters(inputText);
+    if (lts.length) play(lts);
   };
 
-  const handleStop = () => {
-    clearInterval(intervalRef.current);
+  const handleStop = useCallback(() => {
+    cancelAnimationFrame(rafRef.current);
     setPlaying(false);
     setLetters([]);
-    setFrameIdx(0);
-  };
+    setFrameIdx(-1);
+    frameIdxRef.current = -1;
+  }, []);
 
-  useEffect(() => () => clearInterval(intervalRef.current), []);
+  // Cache context once
+  useEffect(() => {
+    ctxRef.current = canvasRef.current?.getContext("2d");
+  }, []);
 
-  // Register pose-viewer Stencil web component (from sign/translate ecosystem)
-  useEffect(() => { defineCustomElements(); }, []);
+  // Repaint idle whenever we're not playing (also on preview change)
+  useEffect(() => {
+    if (!playing) drawIdle();
+  }, [playing, drawIdle]);
 
-  const [poseUrl, setPoseUrl] = useState("");
-  const [activePoseUrl, setActivePoseUrl] = useState("");
+  // Cleanup
+  useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
+
+  const signing = useMemo(() => letters.length > 0, [letters]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
-      <p style={{ color: "var(--stickman-label-color)", margin: 0, fontSize: "0.85rem" }}>
-        Stickman renderer adapted from{" "}
-        <a
-          href="https://github.com/sign/translate"
-          target="_blank"
-          rel="noreferrer"
-          style={{ color: "var(--primary)" }}
-        >
-          sign/translate
-        </a>{" "}
-        pose-viewer canvas renderer
-      </p>
-
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "14px" }}>
       <canvas
         ref={canvasRef}
         width={W}
@@ -213,6 +213,7 @@ export default function ASLStickman() {
           borderRadius: "16px",
           background: "rgba(15, 23, 42, 0.7)",
           border: "1px solid rgba(167, 139, 250, 0.3)",
+          maxWidth: "100%",
         }}
       />
 
@@ -223,8 +224,8 @@ export default function ASLStickman() {
           onKeyDown={(e) => e.key === "Enter" && !playing && handlePlay()}
           placeholder="Type a word (e.g. HELLO)"
           disabled={playing}
-          style={{ flex: 1 }}
           maxLength={40}
+          style={{ flex: 1 }}
         />
         <button
           type="button"
@@ -232,24 +233,23 @@ export default function ASLStickman() {
           disabled={!playing && !inputText.trim()}
           style={{
             width: "auto",
-            padding: "10px 18px",
+            padding: "10px 20px",
             background: playing ? "var(--danger)" : "var(--primary)",
-            color: "#ffffff"
+            color: "#fff",
           }}
         >
-          {playing ? "Stop" : "Play"}
+          {playing ? "◼ Stop" : "▶ Play"}
         </button>
       </div>
 
-      {letters.length > 0 && (
-        <p style={{ color: "var(--stickman-label-color)", margin: 0, fontSize: "0.85rem" }}>
-          Signing:{" "}
+      {signing && (
+        <p style={{ color: "var(--stickman-label-color)", margin: 0, fontSize: "0.85rem", textAlign: "center" }}>
           {letters.map((l, i) => (
             <span
               key={i}
               style={{
                 color: i === frameIdx ? "var(--secondary)" : "var(--stickman-btn-inactive-color)",
-                fontWeight: i === frameIdx ? "bold" : "normal",
+                fontWeight: i === frameIdx ? 700 : 400,
                 marginRight: "3px",
               }}
             >
@@ -259,55 +259,37 @@ export default function ASLStickman() {
         </p>
       )}
 
-      {/* ── pose-viewer section (sign/translate web component) ── */}
+      {/* Alphabet reference — tap to preview a handshape */}
       <div
         style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(9, 1fr)",
+          gap: "5px",
           width: "100%",
           maxWidth: `${W}px`,
-          borderTop: "1px solid rgba(167,139,250,0.2)",
-          paddingTop: "16px",
         }}
       >
-        <p style={{ color: "var(--stickman-label-color)", fontSize: "0.8rem", margin: "0 0 10px 0" }}>
-          Load a <code>.pose</code> file from the{" "}
-          <a href="https://github.com/sign/translate" target="_blank" rel="noreferrer" style={{ color: "var(--primary)" }}>
-            sign/translate
-          </a>{" "}
-          ecosystem for full-body animations:
-        </p>
-        <div style={{ display: "flex", gap: "8px" }}>
-          <input
-            value={poseUrl}
-            onChange={(e) => setPoseUrl(e.target.value)}
-            placeholder="Paste a .pose file URL…"
-            style={{ flex: 1, fontSize: "0.8rem" }}
-          />
+        {ALPHABET.map((c) => (
           <button
+            key={c}
             type="button"
-            onClick={() => setActivePoseUrl(poseUrl.trim())}
-            disabled={!poseUrl.trim()}
-            style={{ width: "auto", padding: "8px 14px", fontSize: "0.8rem" }}
-          >
-            Load
-          </button>
-        </div>
-
-        {activePoseUrl && (
-          <pose-viewer
-            src={activePoseUrl}
-            autoplay
-            loop
-            background="#0F172A"
+            disabled={playing}
+            onClick={() => setPreview((p) => (p === c ? null : c))}
+            title={ASL_HINTS[c]}
             style={{
-              display: "block",
-              width: "100%",
-              height: "280px",
-              marginTop: "12px",
-              borderRadius: "12px",
-              border: "1px solid rgba(167,139,250,0.3)",
+              width: "auto",
+              padding: "6px 0",
+              fontSize: "0.8rem",
+              borderRadius: "7px",
+              cursor: playing ? "not-allowed" : "pointer",
+              background: preview === c ? "var(--stickman-btn-active-bg)" : "var(--stickman-btn-inactive-bg)",
+              border: `1px solid ${preview === c ? "var(--primary)" : "var(--stickman-btn-inactive-border)"}`,
+              color: preview === c ? "var(--stickman-btn-active-color)" : "var(--stickman-btn-inactive-color)",
             }}
-          />
-        )}
+          >
+            {c}
+          </button>
+        ))}
       </div>
     </div>
   );

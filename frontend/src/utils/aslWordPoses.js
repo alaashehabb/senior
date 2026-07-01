@@ -1,333 +1,276 @@
-// Full-body ASL word keyframes  (educational pacing).
+// Full-body ASL word keyframes (educational pacing).
 //
 // Canvas: 320 × 500 px  |  Right shoulder [215,108]  Left shoulder [105,108]
-// Elbow is computed via 2-joint IK — only wrist targets are stored here.
+// The elbow is solved with 2-joint IK — only wrist targets are stored here.
 //
 // Keyframe fields
 // ──────────────────────────────────────────────────────────────────
-//  rWrist / lWrist  : [x,y] absolute canvas px wrist target
-//  rHand  / lHand   : key into ASL_POSES (A-Z / ' '), null = relaxed B
-//  hold             : ms to FREEZE at this position after arriving
-//                     (lets learners see the hand shape clearly)
-//  headDY           : head y-offset px  (+down / -up)
-//  rShoulderDY      : right shoulder y-offset
-//  lShoulderDY      : left  shoulder y-offset
-//  dur              : transition duration ms  (scaled by speed multiplier)
-//  ease             : 'linear'|'easeIn'|'easeOut'|'easeInOut'|'easeOutBack'
+//  rWrist / lWrist : [x,y] absolute canvas-px wrist target
+//  rHand  / lHand  : key into ASL_POSES (A-Z / ILY / ' '), null = relaxed hand
+//  hold            : ms to FREEZE after arriving (lets learners read the shape)
+//  headDY          : head y-offset px (+down / -up)
+//  rShoulderDY     : right-shoulder y-offset      lShoulderDY: left-shoulder
+//  dur             : transition duration ms (scaled by the speed multiplier)
+//  ease            : 'linear'|'easeIn'|'easeOut'|'easeInOut'|'easeOutBack'
+//
+// Handshapes/movements were reviewed against ASL references; the `description`
+// is the plain-language cue shown to the learner.
 
-export const RN = [235, 242]; // right wrist neutral
-export const LN = [85,  242]; // left  wrist neutral
+export const RN = [235, 250]; // right wrist neutral (relaxed at side)
+export const LN = [85,  250]; // left  wrist neutral
 
 export const WORD_ANIMS = {
 
   HELLO: {
-    description: "Open-hand wave from the right temple",
+    description: "Flat hand salutes outward from the temple",
     frames: [
-      // 1. raise hand to right temple
-      { rWrist:[208,62],  rHand:'B', rShoulderDY:-5,
-        dur:600, hold:700, ease:'easeOut' },
-      // 2. wave outward — hold so learner sees full-B wave
-      { rWrist:[268,72],  rHand:'B', rShoulderDY:-5,
-        dur:700, hold:600, ease:'easeInOut' },
-      // 3. back to temple
-      { rWrist:[208,62],  rHand:'B', rShoulderDY:-5,
-        dur:650, hold:500, ease:'easeInOut' },
-      // 4. wave out again
-      { rWrist:[268,72],  rHand:'B', rShoulderDY:-5,
-        dur:700, hold:400, ease:'easeInOut' },
-      // 5. return neutral
-      { rWrist: RN,       rHand:null, rShoulderDY:0,
-        dur:700, ease:'easeIn' },
+      // hand up to the temple (fingers by the forehead)
+      { rWrist: [206, 74], rHand: "B", rShoulderDY: -5,
+        dur: 550, hold: 650, ease: "easeOut" },
+      // swing outward like a casual salute — hold so the B-hand is clear
+      { rWrist: [272, 92], rHand: "B", rShoulderDY: -4,
+        dur: 650, hold: 700, ease: "easeInOut" },
+      // return to side
+      { rWrist: RN, rHand: null, rShoulderDY: 0,
+        dur: 650, ease: "easeIn" },
     ],
   },
 
   "THANK YOU": {
-    description: "Flat hand brushes outward from chin",
+    description: "Flat fingertips touch the chin, then move out toward you",
     frames: [
-      // fingers touch chin
-      { rWrist:[192,92],  rHand:'B', headDY:-3,
-        dur:600, hold:900, ease:'easeOut' },
-      // sweep forward — hold extended to show the gesture
-      { rWrist:[268,98],  rHand:'B', headDY:0,
-        dur:800, hold:900, ease:'easeOutBack' },
-      // return
-      { rWrist: RN,       rHand:null,
-        dur:700, ease:'easeIn' },
+      // fingertips at the chin
+      { rWrist: [196, 96], rHand: "B", headDY: -2,
+        dur: 600, hold: 800, ease: "easeOut" },
+      // move forward/down toward the listener
+      { rWrist: [250, 140], rHand: "B", headDY: 0,
+        dur: 700, hold: 800, ease: "easeOut" },
+      { rWrist: RN, rHand: null,
+        dur: 650, ease: "easeIn" },
     ],
   },
 
   YES: {
-    description: "Fist nods down twice — head follows",
+    description: "'S' fist bobs up and down like a nodding head",
     frames: [
-      { rWrist:[192,112], rHand:'S', headDY:0,
-        dur:500, hold:500, ease:'easeOut' },
-      // nod down
-      { rWrist:[192,130], rHand:'S', headDY:9,
-        dur:400, hold:350, ease:'easeInOut' },
-      // up
-      { rWrist:[192,112], rHand:'S', headDY:0,
-        dur:380, hold:300, ease:'easeInOut' },
-      // nod down again
-      { rWrist:[192,130], rHand:'S', headDY:9,
-        dur:400, hold:350, ease:'easeInOut' },
-      // up
-      { rWrist:[192,112], rHand:'S', headDY:0,
-        dur:380, ease:'easeInOut' },
-      { rWrist: RN,       rHand:null, headDY:0,
-        dur:650, ease:'easeIn' },
+      { rWrist: [200, 120], rHand: "S",
+        dur: 500, hold: 450, ease: "easeOut" },
+      { rWrist: [200, 138], rHand: "S", headDY: 6,   // nod down
+        dur: 320, hold: 250, ease: "easeInOut" },
+      { rWrist: [200, 120], rHand: "S", headDY: 0,   // up
+        dur: 300, hold: 220, ease: "easeInOut" },
+      { rWrist: [200, 138], rHand: "S", headDY: 6,   // nod again
+        dur: 320, hold: 250, ease: "easeInOut" },
+      { rWrist: [200, 120], rHand: "S", headDY: 0,
+        dur: 300, ease: "easeInOut" },
+      { rWrist: RN, rHand: null,
+        dur: 600, ease: "easeIn" },
     ],
   },
 
   NO: {
-    description: "Index + middle snap closed twice",
+    description: "Index + middle snap down onto the thumb, twice",
     frames: [
-      // show open H shape
-      { rWrist:[258,100], rHand:'H',
-        dur:550, hold:700, ease:'easeOut' },
-      // snap closed
-      { rWrist:[258,100], rHand:'N',
-        dur:350, hold:500, ease:'easeInOut' },
+      // open: two fingers up
+      { rWrist: [252, 108], rHand: "U",
+        dur: 520, hold: 550, ease: "easeOut" },
+      // snap closed onto the thumb
+      { rWrist: [252, 108], rHand: "N",
+        dur: 300, hold: 380, ease: "easeInOut" },
       // open
-      { rWrist:[258,100], rHand:'H',
-        dur:350, hold:400, ease:'easeInOut' },
+      { rWrist: [252, 108], rHand: "U",
+        dur: 300, hold: 300, ease: "easeInOut" },
       // snap again
-      { rWrist:[258,100], rHand:'N',
-        dur:350, hold:500, ease:'easeInOut' },
-      { rWrist: RN,       rHand:null,
-        dur:650, ease:'easeIn' },
+      { rWrist: [252, 108], rHand: "N",
+        dur: 300, hold: 400, ease: "easeInOut" },
+      { rWrist: RN, rHand: null,
+        dur: 620, ease: "easeIn" },
     ],
   },
 
   PLEASE: {
-    description: "Flat hand traces a clockwise circle on the chest",
+    description: "Flat hand rubs a repeated circle on the chest",
     frames: [
-      { rWrist:[196,152], rHand:'B',
-        dur:550, hold:600, ease:'easeOut' },
-      { rWrist:[194,135], rHand:'B',
-        dur:500, hold:200, ease:'easeInOut' }, // top
-      { rWrist:[207,147], rHand:'B',
-        dur:480, hold:200, ease:'easeInOut' }, // right
-      { rWrist:[196,162], rHand:'B',
-        dur:500, hold:200, ease:'easeInOut' }, // bottom
-      { rWrist:[182,150], rHand:'B',
-        dur:480, hold:200, ease:'easeInOut' }, // left
-      { rWrist:[194,135], rHand:'B',
-        dur:500, hold:400, ease:'easeInOut' }, // top — full circle, hold
-      { rWrist: RN,       rHand:null,
-        dur:700, ease:'easeIn' },
+      { rWrist: [196, 150], rHand: "B",
+        dur: 550, hold: 350, ease: "easeOut" },
+      { rWrist: [192, 134], rHand: "B", dur: 380, hold: 100, ease: "easeInOut" }, // top (loop 1)
+      { rWrist: [208, 146], rHand: "B", dur: 360, hold: 100, ease: "easeInOut" }, // right
+      { rWrist: [196, 162], rHand: "B", dur: 380, hold: 100, ease: "easeInOut" }, // bottom
+      { rWrist: [182, 148], rHand: "B", dur: 360, hold: 100, ease: "easeInOut" }, // left
+      { rWrist: [192, 134], rHand: "B", dur: 380, hold: 100, ease: "easeInOut" }, // top (loop 2)
+      { rWrist: [208, 146], rHand: "B", dur: 360, hold: 100, ease: "easeInOut" }, // right
+      { rWrist: [196, 162], rHand: "B", dur: 380, hold: 100, ease: "easeInOut" }, // bottom
+      { rWrist: [182, 148], rHand: "B", dur: 360, hold: 100, ease: "easeInOut" }, // left
+      { rWrist: [192, 134], rHand: "B", dur: 380, hold: 300, ease: "easeInOut" }, // top (end)
+      { rWrist: RN, rHand: null, dur: 660, ease: "easeIn" },
     ],
   },
 
   SORRY: {
-    description: "Fist traces a clockwise circle on the chest",
+    description: "Fist (thumb up) rubs a circle on the chest",
     frames: [
-      { rWrist:[196,152], rHand:'S',
-        dur:550, hold:600, ease:'easeOut' },
-      { rWrist:[194,135], rHand:'S',
-        dur:500, hold:200, ease:'easeInOut' },
-      { rWrist:[207,147], rHand:'S',
-        dur:480, hold:200, ease:'easeInOut' },
-      { rWrist:[196,162], rHand:'S',
-        dur:500, hold:200, ease:'easeInOut' },
-      { rWrist:[182,150], rHand:'S',
-        dur:480, hold:200, ease:'easeInOut' },
-      { rWrist:[194,135], rHand:'S',
-        dur:500, hold:400, ease:'easeInOut' },
-      { rWrist: RN,       rHand:null,
-        dur:700, ease:'easeIn' },
+      { rWrist: [196, 150], rHand: "A",
+        dur: 550, hold: 550, ease: "easeOut" },
+      { rWrist: [192, 134], rHand: "A", dur: 460, hold: 160, ease: "easeInOut" },
+      { rWrist: [208, 146], rHand: "A", dur: 440, hold: 160, ease: "easeInOut" },
+      { rWrist: [196, 162], rHand: "A", dur: 460, hold: 160, ease: "easeInOut" },
+      { rWrist: [182, 148], rHand: "A", dur: 440, hold: 160, ease: "easeInOut" },
+      { rWrist: [192, 134], rHand: "A", dur: 460, hold: 360, ease: "easeInOut" },
+      { rWrist: RN, rHand: null, dur: 660, ease: "easeIn" },
     ],
   },
 
   "I LOVE YOU": {
-    description: "Y-handshape raised (thumb + index + pinky extended)",
+    description: "Thumb, index and pinky all extended, held up",
     frames: [
-      { rWrist: RN,       rHand:null, rShoulderDY:0,
-        dur:400, ease:'easeOut' },
-      // raise with gentle overshoot — long hold so learner studies the Y shape
-      { rWrist:[248,118], rHand:'Y',  rShoulderDY:-8,
-        dur:750, hold:1400, ease:'easeOutBack' },
-      { rWrist: RN,       rHand:null, rShoulderDY:0,
-        dur:750, ease:'easeIn' },
+      { rWrist: RN, rHand: null, dur: 380, ease: "easeOut" },
+      // raise with a gentle overshoot; long hold to study the shape
+      { rWrist: [250, 122], rHand: "ILY", rShoulderDY: -8,
+        dur: 700, hold: 1300, ease: "easeOutBack" },
+      { rWrist: RN, rHand: null, rShoulderDY: 0,
+        dur: 700, ease: "easeIn" },
     ],
   },
 
   EAT: {
     description: "Bunched fingertips tap the mouth twice",
     frames: [
-      // show O shape at mouth
-      { rWrist:[192,82],  rHand:'O',
-        dur:600, hold:700, ease:'easeOut' },
-      { rWrist:[192,76],  rHand:'O',
-        dur:380, hold:400, ease:'easeInOut' }, // tap
-      { rWrist:[192,83],  rHand:'O',
-        dur:360, hold:200, ease:'easeInOut' }, // back
-      { rWrist:[192,76],  rHand:'O',
-        dur:380, hold:400, ease:'easeInOut' }, // tap again
-      { rWrist:[192,83],  rHand:'O',
-        dur:360, ease:'easeInOut' },
-      { rWrist: RN,       rHand:null,
-        dur:650, ease:'easeIn' },
+      { rWrist: [196, 86], rHand: "O",
+        dur: 600, hold: 650, ease: "easeOut" },
+      { rWrist: [196, 80], rHand: "O", dur: 340, hold: 350, ease: "easeInOut" }, // tap
+      { rWrist: [196, 88], rHand: "O", dur: 320, hold: 200, ease: "easeInOut" },
+      { rWrist: [196, 80], rHand: "O", dur: 340, hold: 350, ease: "easeInOut" }, // tap
+      { rWrist: RN, rHand: null, dur: 620, ease: "easeIn" },
     ],
   },
 
   DRINK: {
-    description: "C-shape tilts up to mouth, then lowers",
+    description: "C-hand rises to the mouth and tips back like sipping a cup",
     frames: [
-      // show C shape at rest
-      { rWrist:[218,134], rHand:'C',
-        dur:600, hold:700, ease:'easeOut' },
-      // tip to mouth — long hold at peak
-      { rWrist:[198,88],  rHand:'C', rShoulderDY:-3,
-        dur:800, hold:1000, ease:'easeInOut' },
-      // lower back
-      { rWrist:[218,134], rHand:'C', rShoulderDY:0,
-        dur:700, ease:'easeIn' },
-      { rWrist: RN,       rHand:null,
-        dur:650, ease:'easeIn' },
+      // rise straight to the mouth — no meaningful stop at chest height
+      { rWrist: [200, 92], rHand: "C", rShoulderDY: -3,
+        dur: 650, hold: 450, ease: "easeOut" },
+      // tip back slightly at the mouth (the sip) — small motion, same spot
+      { rWrist: [196, 84], rHand: "C", rShoulderDY: -3,
+        dur: 340, hold: 450, ease: "easeInOut" },
+      { rWrist: [200, 92], rHand: "C", rShoulderDY: -3,
+        dur: 320, hold: 250, ease: "easeInOut" },
+      { rWrist: RN, rHand: null, rShoulderDY: 0, dur: 650, ease: "easeIn" },
     ],
   },
 
   WATER: {
-    description: "W-handshape taps the chin twice",
+    description: "W-hand taps the chin twice",
     frames: [
-      // show W shape at chin
-      { rWrist:[196,91],  rHand:'W',
-        dur:600, hold:800, ease:'easeOut' },
-      { rWrist:[196,99],  rHand:'W',
-        dur:380, hold:400, ease:'easeInOut' }, // tap
-      { rWrist:[196,91],  rHand:'W',
-        dur:360, hold:200, ease:'easeInOut' }, // back
-      { rWrist:[196,99],  rHand:'W',
-        dur:380, hold:400, ease:'easeInOut' }, // tap
-      { rWrist:[196,91],  rHand:'W',
-        dur:360, ease:'easeInOut' },
-      { rWrist: RN,       rHand:null,
-        dur:650, ease:'easeIn' },
+      { rWrist: [198, 94], rHand: "W",
+        dur: 600, hold: 700, ease: "easeOut" },
+      { rWrist: [198, 102], rHand: "W", dur: 340, hold: 350, ease: "easeInOut" }, // tap
+      { rWrist: [198, 94], rHand: "W", dur: 320, hold: 200, ease: "easeInOut" },
+      { rWrist: [198, 102], rHand: "W", dur: 340, hold: 350, ease: "easeInOut" }, // tap
+      { rWrist: RN, rHand: null, dur: 620, ease: "easeIn" },
     ],
   },
 
   MORE: {
-    description: "Both O-hands tap fingertips together twice",
+    description: "Two bunched hands tap fingertips together twice",
     frames: [
-      // show both O shapes apart
-      { rWrist:[204,165], lWrist:[116,165], rHand:'O', lHand:'O',
-        dur:650, hold:700, ease:'easeOut' },
-      // tap together — hold
-      { rWrist:[188,162], lWrist:[132,162], rHand:'O', lHand:'O',
-        dur:500, hold:550, ease:'easeInOut' },
-      // apart
-      { rWrist:[206,168], lWrist:[114,168], rHand:'O', lHand:'O',
-        dur:460, hold:300, ease:'easeInOut' },
-      // tap again
-      { rWrist:[188,162], lWrist:[132,162], rHand:'O', lHand:'O',
-        dur:500, hold:550, ease:'easeInOut' },
-      { rWrist: RN,       lWrist: LN,       rHand:null, lHand:null,
-        dur:700, ease:'easeIn' },
+      { rWrist: [206, 165], lWrist: [114, 165], rHand: "O", lHand: "O",
+        dur: 620, hold: 650, ease: "easeOut" },
+      { rWrist: [188, 162], lWrist: [132, 162], rHand: "O", lHand: "O",   // tap
+        dur: 460, hold: 500, ease: "easeInOut" },
+      { rWrist: [208, 168], lWrist: [112, 168], rHand: "O", lHand: "O",   // apart
+        dur: 440, hold: 280, ease: "easeInOut" },
+      { rWrist: [188, 162], lWrist: [132, 162], rHand: "O", lHand: "O",   // tap
+        dur: 460, hold: 500, ease: "easeInOut" },
+      { rWrist: RN, lWrist: LN, rHand: null, lHand: null,
+        dur: 660, ease: "easeIn" },
     ],
   },
 
   HELP: {
-    description: "Fist sits on flat palm — both hands lift upward",
+    description: "A thumbs-up fist rests on a flat palm; both lift up",
     frames: [
-      // show starting position: fist on palm at waist
-      { rWrist:[192,210], lWrist:[128,212], rHand:'S', lHand:'B',
-        rShoulderDY:0, lShoulderDY:0,
-        dur:650, hold:800, ease:'easeOut' },
-      // lift together — overshoot slightly, long hold at peak
-      { rWrist:[186,168], lWrist:[122,170], rHand:'S', lHand:'B',
-        rShoulderDY:-10, lShoulderDY:-10,
-        dur:800, hold:1000, ease:'easeOutBack' },
-      // return
-      { rWrist: RN,       lWrist: LN,       rHand:null, lHand:null,
-        rShoulderDY:0,   lShoulderDY:0,
-        dur:750, ease:'easeIn' },
+      // thumbs-up fist sitting on the open base palm
+      { rWrist: [188, 208], lWrist: [128, 214], rHand: "A", lHand: "B",
+        dur: 640, hold: 750, ease: "easeOut" },
+      // lift together, slight overshoot, long hold
+      { rWrist: [182, 166], lWrist: [122, 172], rHand: "A", lHand: "B",
+        rShoulderDY: -10, lShoulderDY: -10,
+        dur: 780, hold: 950, ease: "easeOutBack" },
+      { rWrist: RN, lWrist: LN, rHand: null, lHand: null,
+        rShoulderDY: 0, lShoulderDY: 0,
+        dur: 720, ease: "easeIn" },
     ],
   },
 
   STOP: {
-    description: "Right hand chops down onto left flat palm",
+    description: "Flat hand chops down sharply onto the other flat palm — one strike, no bounce",
     frames: [
-      // show setup: left platform + right raised
-      { rWrist:[250,125], lWrist:[145,170], rHand:'B', lHand:'B',
-        dur:650, hold:700, ease:'easeOut' },
-      // chop — spring bounce shows impact
-      { rWrist:[192,170], lWrist:[145,170], rHand:'B', lHand:'B',
-        dur:550, hold:900, ease:'easeOutBack' },
-      // rebound
-      { rWrist:[200,162], lWrist:[145,170], rHand:'B', lHand:'B',
-        dur:220, ease:'easeOut' },
-      // settle back to chop
-      { rWrist:[192,170], lWrist:[145,170], rHand:'B', lHand:'B',
-        dur:200, hold:400, ease:'easeInOut' },
-      { rWrist: RN,       lWrist: LN,       rHand:null, lHand:null,
-        dur:700, ease:'easeIn' },
+      { rWrist: [252, 128], lWrist: [148, 176], rHand: "B", lHand: "B",
+        dur: 620, hold: 650, ease: "easeOut" },
+      // single sharp strike — accelerates INTO contact and stops dead, no rebound
+      { rWrist: [196, 176], lWrist: [148, 176], rHand: "B", lHand: "B",
+        dur: 380, hold: 900, ease: "easeIn" },
+      { rWrist: RN, lWrist: LN, rHand: null, lHand: null,
+        dur: 660, ease: "easeIn" },
     ],
   },
 
   GO: {
     description: "Index finger points and thrusts forward",
     frames: [
-      // show D-shape at rest
-      { rWrist:[245,135], rHand:'D',
-        dur:600, hold:700, ease:'easeOut' },
-      // thrust — spring overshoot, long hold
-      { rWrist:[280,116], rHand:'D', rShoulderDY:-5,
-        dur:700, hold:900, ease:'easeOutBack' },
-      { rWrist: RN,       rHand:null, rShoulderDY:0,
-        dur:700, ease:'easeIn' },
+      { rWrist: [244, 140], rHand: "D",
+        dur: 600, hold: 650, ease: "easeOut" },
+      { rWrist: [282, 120], rHand: "D", rShoulderDY: -5,   // thrust out
+        dur: 660, hold: 800, ease: "easeOutBack" },
+      { rWrist: RN, rHand: null, rShoulderDY: 0,
+        dur: 660, ease: "easeIn" },
     ],
   },
 
   COME: {
-    description: "Index extends then hooks inward twice",
+    description: "Both index fingers hook and arc inward toward you — a single beckoning motion",
     frames: [
-      // show extended D
-      { rWrist:[270,126], rHand:'D',
-        dur:600, hold:700, ease:'easeOut' },
-      // beckon hook — hold
-      { rWrist:[248,140], rHand:'X',
-        dur:550, hold:600, ease:'easeInOut' },
-      // extend
-      { rWrist:[270,126], rHand:'D',
-        dur:500, hold:300, ease:'easeInOut' },
-      // beckon again
-      { rWrist:[248,140], rHand:'X',
-        dur:550, hold:600, ease:'easeInOut' },
-      { rWrist: RN,       rHand:null,
-        dur:700, ease:'easeIn' },
+      // both hands extended out, index fingers pointing
+      { rWrist: [266, 138], lWrist: [54, 138], rHand: "D", lHand: "D",
+        dur: 600, hold: 550, ease: "easeOut" },
+      // arc inward and slightly up toward the chest/chin, hooking as they pull in
+      { rWrist: [204, 116], lWrist: [116, 116], rHand: "X", lHand: "X",
+        dur: 640, hold: 800, ease: "easeInOut" },
+      { rWrist: RN, lWrist: LN, rHand: null, lHand: null,
+        dur: 660, ease: "easeIn" },
     ],
   },
 
   LEARN: {
-    description: "Hand scoops from flat palm up to forehead",
+    description: "Relaxed hand plucks info off the palm, rising as a flat-O to the forehead",
     frames: [
-      // show both hands: right above left palm
-      { rWrist:[162,178], lWrist:[138,185], rHand:'B', lHand:'B',
-        dur:650, hold:800, ease:'easeOut' },
-      // scoop: right hand curls to O and rises to forehead — long hold
-      { rWrist:[202,72],  lWrist: LN,       rHand:'O', lHand:null,
-        rShoulderDY:-7,
-        dur:850, hold:1100, ease:'easeInOut' },
-      { rWrist: RN,       lWrist: LN,       rHand:null, lHand:null,
-        rShoulderDY:0,
-        dur:750, ease:'easeIn' },
+      // relaxed, half-open hand hovers above the flat base palm (not flat-B yet)
+      { rWrist: [166, 182], lWrist: [140, 188], rHand: null, lHand: "B",
+        dur: 640, hold: 700, ease: "easeOut" },
+      // pinch to a flat-O and rise to the forehead
+      { rWrist: [204, 78], lWrist: LN, rHand: "O", lHand: null,
+        rShoulderDY: -7,
+        dur: 820, hold: 1000, ease: "easeInOut" },
+      { rWrist: RN, lWrist: LN, rHand: null, lHand: null,
+        rShoulderDY: 0,
+        dur: 720, ease: "easeIn" },
     ],
   },
 
   NAME: {
-    description: "H-handshapes tap on each other twice",
+    description: "Two H-hands cross and tap twice",
     frames: [
-      // show both H hands
-      { rWrist:[182,168], lWrist:[138,168], rHand:'H', lHand:'H',
-        dur:650, hold:700, ease:'easeOut' },
-      { rWrist:[180,162], lWrist:[140,168], rHand:'H', lHand:'H',
-        dur:400, hold:450, ease:'easeInOut' }, // tap
-      { rWrist:[182,170], lWrist:[138,168], rHand:'H', lHand:'H',
-        dur:380, hold:250, ease:'easeInOut' },
-      { rWrist:[180,162], lWrist:[140,168], rHand:'H', lHand:'H',
-        dur:400, hold:450, ease:'easeInOut' }, // tap again
-      { rWrist: RN,       lWrist: LN,       rHand:null, lHand:null,
-        dur:700, ease:'easeIn' },
+      { rWrist: [182, 168], lWrist: [138, 168], rHand: "H", lHand: "H",
+        dur: 640, hold: 650, ease: "easeOut" },
+      { rWrist: [180, 162], lWrist: [140, 168], rHand: "H", lHand: "H",   // tap
+        dur: 380, hold: 420, ease: "easeInOut" },
+      { rWrist: [182, 170], lWrist: [138, 168], rHand: "H", lHand: "H",
+        dur: 360, hold: 240, ease: "easeInOut" },
+      { rWrist: [180, 162], lWrist: [140, 168], rHand: "H", lHand: "H",   // tap
+        dur: 380, hold: 420, ease: "easeInOut" },
+      { rWrist: RN, lWrist: LN, rHand: null, lHand: null,
+        dur: 660, ease: "easeIn" },
     ],
   },
 

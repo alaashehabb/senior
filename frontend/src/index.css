@@ -453,6 +453,52 @@ button:disabled {
   left: 0;
 }
 
+/* Educational tab */
+.edu-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.edu-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.edu-col {
+  background: var(--chat-bg);
+  border: 1px solid var(--btn-secondary-border);
+  border-radius: 18px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.edu-col-title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.edu-col-sub {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+@media (max-width: 760px) {
+  .edu-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .status-text {
   color: #A78BFA;
   font-size: 0.9rem;

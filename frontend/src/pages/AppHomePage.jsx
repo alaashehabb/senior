@@ -544,25 +544,37 @@ function AppHomePage() {
           </div>
         ) : (
           <section className="tab-panel">
-            <h3 style={{ marginBottom: "4px" }}>ASL Sign Translator</h3>
-            <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "24px" }}>
-              Two modes: fingerspell any text letter-by-letter, or watch the full-body stickman sign common ASL words.
-            </p>
+            <div className="edu-intro">
+              <h3 style={{ margin: 0 }}>Learn to Sign</h3>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", margin: 0 }}>
+                Practice ASL two ways: fingerspell any word letter-by-letter, or watch the
+                stickman sign common everyday words. Each sign shows a plain-language cue —
+                tap a letter to freeze on its handshape.
+              </p>
+            </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px", alignItems: "start" }}>
+            <div className="edu-grid">
               {/* Left: letter fingerspelling */}
-              <div>
-                <h4 style={{ color: "var(--primary)", marginBottom: "12px", fontSize: "0.95rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Fingerspelling (A–Z)
+              <div className="edu-col">
+                <h4 className="edu-col-title" style={{ color: "var(--primary)" }}>
+                  Fingerspelling · A–Z
                 </h4>
+                <p className="edu-col-sub">
+                  Type a word and press Play to spell it out. The hand morphs smoothly between
+                  letters; J and Z are traced in the air.
+                </p>
                 <ASLStickman />
               </div>
 
               {/* Right: full-body word signing */}
-              <div>
-                <h4 style={{ color: "var(--secondary)", marginBottom: "12px", fontSize: "0.95rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Word Signs (full body)
+              <div className="edu-col">
+                <h4 className="edu-col-title" style={{ color: "var(--secondary)" }}>
+                  Word Signs · Full Body
                 </h4>
+                <p className="edu-col-sub">
+                  Pick a word and watch the full-body sign. Use 🐢 Slow to study the motion,
+                  then ⚡ Normal for natural speed.
+                </p>
                 <ASLWordStickman />
               </div>
             </div>

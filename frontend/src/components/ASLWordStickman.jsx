@@ -1,233 +1,188 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { defineCustomElements } from "pose-viewer/loader";
-import { ASL_POSES, HAND_CONNECTIONS } from "../utils/aslHandPoses";
+import { ASL_POSES } from "../utils/aslHandPoses";
 import { WORD_ANIMS, WORD_LIST, RN, LN } from "../utils/aslWordPoses";
-
-const MODEL_SERVICE = "http://localhost:8000";
+import { COLORS, EASE, drawHand, lerpXY, lerp, solveArm } from "../utils/aslRenderer";
 
 const W = 320;
 const H = 500;
-const HAND_SCALE = 112;
+const HAND_SCALE = 118;
+const TAU = Math.PI * 2;
 
 // ── Body constants ────────────────────────────────────────────────────────────
 const RS = [215, 108]; // right shoulder
 const LS = [105, 108]; // left  shoulder
 const UPPER = 65;
-const FORE  = 65;
-const R_HINT = [278, 165];
-const L_HINT = [42,  165];
+const FORE = 65;
+const R_HINT = [278, 165]; // elbow bend hint (keeps elbows natural)
+const L_HINT = [42, 165];
 
-const SPEED_MULT = { slow: 1.0, normal: 0.52 };
+const RELAXED = ASL_POSES[" "];
+const SPEED_MULT = { slow: 1.0, normal: 0.55 };
 
-// ── Easing ────────────────────────────────────────────────────────────────────
-const EASE = {
-  linear:      t => t,
-  easeIn:      t => t ** 3,
-  easeOut:     t => 1 - (1 - t) ** 3,
-  easeInOut:   t => t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2,
-  easeOutBack: t => 1 + 2.70158 * (t - 1) ** 3 + 1.70158 * (t - 1) ** 2,
-};
-
-// ── 2-joint IK ────────────────────────────────────────────────────────────────
-function solveArm([sx, sy], [wx, wy], upper, fore, [hx, hy]) {
-  const dx = wx - sx, dy = wy - sy;
-  const d  = Math.max(Math.abs(upper - fore) + 0.5,
-                      Math.min(Math.hypot(dx, dy), upper + fore - 0.5));
-  const a  = Math.acos(Math.max(-1, Math.min(1,
-               (upper * upper + d * d - fore * fore) / (2 * upper * d))));
-  const base = Math.atan2(dy, dx);
-  const e1 = [sx + Math.cos(base + a) * upper, sy + Math.sin(base + a) * upper];
-  const e2 = [sx + Math.cos(base - a) * upper, sy + Math.sin(base - a) * upper];
-  return Math.hypot(e1[0]-hx, e1[1]-hy) < Math.hypot(e2[0]-hx, e2[1]-hy) ? e1 : e2;
-}
-
-// ── Drawing — fully batched, one stroke/fill per color ────────────────────────
-
-// One hand: 1 stroke call for all bones + 1 fill call for all joints
-function drawHand(ctx, key, wx, wy) {
-  const lms = (key && ASL_POSES[key]) || ASL_POSES.B;
-  if (!lms) return;
-  const [orx, ory] = lms[0]; // wrist landmark origin
-  const px = n => wx + (n - orx) * HAND_SCALE;
-  const py = n => wy + (n - ory) * HAND_SCALE;
-
-  ctx.strokeStyle = "rgba(248,113,113,0.90)";
-  ctx.lineWidth = 2.8;
-  ctx.beginPath();
-  for (const [a, b] of HAND_CONNECTIONS) {
-    ctx.moveTo(px(lms[a][0]), py(lms[a][1]));
-    ctx.lineTo(px(lms[b][0]), py(lms[b][1]));
-  }
-  ctx.stroke();
-
-  ctx.fillStyle = "rgba(251,191,36,0.92)";
-  ctx.beginPath();
-  for (const [lx, ly] of lms) {
-    ctx.moveTo(px(lx) + 3, py(ly));       // moveTo needed before each arc
-    ctx.arc(px(lx), py(ly), 3, 0, 6.283);
-  }
-  ctx.fill();
-}
-
-// Full scene: 2 stroke calls (purple body+left arm, pink right arm) + 4 hand calls
-function drawScene(ctx, rWrist, lWrist, rHand, lHand, s = {}) {
-  const headY = 55  + (s.headDY      ?? 0);
-  const rSY   = RS[1] + (s.rShoulderDY ?? 0);
-  const lSY   = LS[1] + (s.lShoulderDY ?? 0);
-  const rS = [RS[0], rSY], lS = [LS[0], lSY];
-
-  const lE = solveArm(lS, lWrist, UPPER, FORE, L_HINT);
-  const rE = solveArm(rS, rWrist, UPPER, FORE, R_HINT);
+// ── Whole scene: stick body (IK arms) + two hands ─────────────────────────────
+// `hint` biases which of the two elbow-bend solutions to use. Pass the
+// PREVIOUS frame's own elbow position (not a fixed point) so the bend never
+// discontinuously flips mid-animation — only the very first call of a
+// playback should fall back to the static R_HINT/L_HINT default.
+function drawScene(ctx, rWrist, lWrist, rHand, lHand, s = {}, hint = {}) {
+  const headY = 55 + (s.headDY ?? 0);
+  const rSY = RS[1] + (s.rShoulderDY ?? 0);
+  const lSY = LS[1] + (s.lShoulderDY ?? 0);
+  const rS = [RS[0], rSY];
+  const lS = [LS[0], lSY];
+  const lE = solveArm(lS, lWrist, UPPER, FORE, hint.lElbow ?? L_HINT);
+  const rE = solveArm(rS, rWrist, UPPER, FORE, hint.rElbow ?? R_HINT);
 
   ctx.lineCap = "round";
+  ctx.lineJoin = "round";
 
-  // Purple: body + left arm — everything in ONE beginPath→stroke
-  ctx.strokeStyle = "#A78BFA";
+  // Purple: head, torso, hips, legs + left arm — one path
+  ctx.strokeStyle = COLORS.body;
   ctx.lineWidth = 3.5;
   ctx.beginPath();
-  ctx.arc(160, headY, 28, 0, 6.283);
-  ctx.moveTo(160, headY + 28);  ctx.lineTo(160, Math.min(rSY, lSY));
-  ctx.moveTo(lS[0], lS[1]);     ctx.lineTo(rS[0], rS[1]);
-  ctx.moveTo(160, 108);         ctx.lineTo(160, 232);
-  ctx.moveTo(135, 232);         ctx.lineTo(185, 232);
-  ctx.moveTo(135, 232);         ctx.lineTo(115, 315);
-  ctx.moveTo(185, 232);         ctx.lineTo(205, 315);
-  ctx.moveTo(115, 315);         ctx.lineTo(108, 395);
-  ctx.moveTo(205, 315);         ctx.lineTo(212, 395);
-  ctx.moveTo(lS[0], lS[1]);     ctx.lineTo(lE[0], lE[1]);
-  ctx.moveTo(lE[0], lE[1]);     ctx.lineTo(lWrist[0], lWrist[1]);
+  ctx.arc(160, headY, 28, 0, TAU);
+  ctx.moveTo(160, headY + 28); ctx.lineTo(160, Math.min(rSY, lSY));
+  ctx.moveTo(lS[0], lS[1]);    ctx.lineTo(rS[0], rS[1]);   // shoulders
+  ctx.moveTo(160, 108);        ctx.lineTo(160, 232);       // torso
+  ctx.moveTo(135, 232);        ctx.lineTo(185, 232);       // hips
+  ctx.moveTo(135, 232);        ctx.lineTo(115, 315);
+  ctx.moveTo(185, 232);        ctx.lineTo(205, 315);
+  ctx.moveTo(115, 315);        ctx.lineTo(108, 395);
+  ctx.moveTo(205, 315);        ctx.lineTo(212, 395);
+  ctx.moveTo(lS[0], lS[1]);    ctx.lineTo(lE[0], lE[1]);   // left upper arm
+  ctx.lineTo(lWrist[0], lWrist[1]);                        // left forearm
   ctx.stroke();
 
-  // Pink: right arm — ONE beginPath→stroke
-  ctx.strokeStyle = "#F472B6";
+  // Pink: right (signing) arm
+  ctx.strokeStyle = COLORS.activeArm;
   ctx.beginPath();
-  ctx.moveTo(rS[0], rS[1]);    ctx.lineTo(rE[0], rE[1]);
-  ctx.moveTo(rE[0], rE[1]);    ctx.lineTo(rWrist[0], rWrist[1]);
+  ctx.moveTo(rS[0], rS[1]); ctx.lineTo(rE[0], rE[1]);
+  ctx.lineTo(rWrist[0], rWrist[1]);
   ctx.stroke();
 
-  drawHand(ctx, rHand, rWrist[0], rWrist[1]);
-  drawHand(ctx, lHand, lWrist[0], lWrist[1]);
-}
+  drawHand(ctx, rHand ? ASL_POSES[rHand] : RELAXED, { ox: rWrist[0], oy: rWrist[1], scale: HAND_SCALE });
+  drawHand(ctx, lHand ? ASL_POSES[lHand] : RELAXED, { ox: lWrist[0], oy: lWrist[1], scale: HAND_SCALE });
 
-// ── Lerp ──────────────────────────────────────────────────────────────────────
-const lerpW = (a, b, t) => [a[0] + (b[0]-a[0])*t, a[1] + (b[1]-a[1])*t];
-const lerpN = (a = 0, b = 0, t) => a + (b-a)*t;
+  return { rElbow: rE, lElbow: lE }; // feed forward as next frame's continuity hint
+}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function ASLWordStickman() {
   const canvasRef = useRef(null);
-  const ctxRef    = useRef(null);   // cached 2D context — never re-fetched
-  const rafRef    = useRef(null);
-  const breathRef = useRef(null);
+  const ctxRef = useRef(null);
+  const rafRef = useRef(null);
+  const playedRef = useRef(false); // has a sign finished at least once?
 
-  const [selected,    setSelected]    = useState("HELLO");
-  const [isPlaying,   setIsPlaying]   = useState(false);
-  const [speed,       setSpeed]       = useState("slow");
-  const [poseUrl,     setPoseUrl]     = useState(null);   // set when real .pose exists
-  const [viewMode,    setViewMode]    = useState("canvas"); // "canvas" | "pose-viewer"
+  const [selected, setSelected] = useState("HELLO");
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [speed, setSpeed] = useState("slow");
 
-  // Cache context once on mount + register pose-viewer web component
+  // Cache context once
   useEffect(() => {
     ctxRef.current = canvasRef.current?.getContext("2d");
-    defineCustomElements();
   }, []);
 
-  // Check whether the model service has a real .pose file for the selected word
-  useEffect(() => {
-    const slug = selected.toLowerCase().replace(/ /g, "_");
-    const url  = `${MODEL_SERVICE}/api/poses/${slug}`;
-    fetch(url, { method: "HEAD" })
-      .then(r => { setPoseUrl(r.ok ? url : null); })
-      .catch(() => setPoseUrl(null));
-  }, [selected]);
-
-  // ── Idle breathing ──────────────────────────────────────────────────────
-  const startBreathing = useCallback(() => {
-    cancelAnimationFrame(breathRef.current);
-    const t0 = performance.now();
-    const breathe = (now) => {
-      const ctx = ctxRef.current;
-      if (!ctx) return;
-      const dy = Math.sin((now - t0) / 909) * 2.2;   // ~1.1 Hz
-      ctx.clearRect(0, 0, W, H);
-      drawScene(ctx, RN, LN, null, null, {
-        headDY: dy * 0.4, rShoulderDY: dy * 0.6, lShoulderDY: dy * 0.6,
-      });
-      ctx.fillStyle = "rgba(255,255,255,0.18)";
-      ctx.font = "13px system-ui";
-      ctx.textAlign = "center";
-      ctx.fillText("▶ Press Play to sign", W / 2, H - 18);
-      breathRef.current = requestAnimationFrame(breathe);
-    };
-    breathRef.current = requestAnimationFrame(breathe);
+  // ── Static idle frame (no perpetual animation → no idle CPU cost) ───────────
+  const drawIdle = useCallback(() => {
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+    const label = playedRef.current ? "↻ Press Play again" : "▶ Press Play to sign";
+    ctx.clearRect(0, 0, W, H);
+    drawScene(ctx, RN, LN, null, null);
+    ctx.fillStyle = "rgba(255,255,255,0.30)";
+    ctx.font = "13px Outfit, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(label, W / 2, H - 16);
   }, []);
 
-  const stopBreathing = useCallback(() => cancelAnimationFrame(breathRef.current), []);
-
-  // ── Play animation ──────────────────────────────────────────────────────
+  // ── Playback (RAF only while playing) ───────────────────────────────────────
   const playWord = useCallback((wordKey, mult) => {
     cancelAnimationFrame(rafRef.current);
-    stopBreathing();
     const anim = WORD_ANIMS[wordKey];
     if (!anim) return;
     setIsPlaying(true);
 
     const frames = anim.frames;
-    let fIdx = 0, fStart = null;
+    let fIdx = 0;
+    let fStart = null;
+
+    // "prev" = the position/handshape we're moving FROM this segment (starts
+    // at rest). Each keyframe's own dur/ease describes the move INTO it, so
+    // the move phase must lerp prev → frame (not frame → next) or the hold
+    // phase — which always shows frame's own target — snaps on every entry.
+    let prevR = RN, prevL = LN;
+    let prevRHand = null, prevLHand = null;
+    let prevState = { headDY: 0, rShoulderDY: 0, lShoulderDY: 0 };
+
+    // Elbow continuity hints: seeded with the static defaults, then fed
+    // forward each frame so the 2-joint IK never has to choose between its
+    // two bend solutions by distance-to-a-fixed-point (which can flip
+    // discontinuously); it just stays near wherever the elbow already was.
+    let rHint = R_HINT, lHint = L_HINT;
 
     const tick = (now) => {
       if (fStart === null) fStart = now;
       const elapsed = now - fStart;
-      const frame   = frames[fIdx];
-      const nextF   = frames[Math.min(fIdx + 1, frames.length - 1)];
+      const frame = frames[fIdx];
       const moveDur = frame.dur * mult;
       const holdDur = (frame.hold ?? 0) * mult;
-      const inHold  = elapsed >= moveDur;
-      const rawT    = inHold ? 1 : elapsed / moveDur;
-      const t       = inHold ? 1 : (EASE[frame.ease] ?? EASE.easeInOut)(rawT);
+      const inHold = elapsed >= moveDur;
+      const rawT = inHold ? 1 : elapsed / moveDur;
+      const t = inHold ? 1 : (EASE[frame.ease] ?? EASE.easeInOut)(rawT);
 
-      // Wrist positions
-      const rW = inHold ? (frame.rWrist ?? RN) : lerpW(frame.rWrist ?? RN, nextF.rWrist ?? RN, t);
-      const lW = inHold ? (frame.lWrist ?? LN) : lerpW(frame.lWrist ?? LN, nextF.lWrist ?? LN, t);
+      const rW = inHold ? (frame.rWrist ?? RN) : lerpXY(prevR, frame.rWrist ?? RN, t);
+      const lW = inHold ? (frame.lWrist ?? LN) : lerpXY(prevL, frame.lWrist ?? LN, t);
 
-      // State
       const state = {
-        headDY:      inHold ? (frame.headDY      ?? 0) : lerpN(frame.headDY,      nextF.headDY,      t),
-        rShoulderDY: inHold ? (frame.rShoulderDY ?? 0) : lerpN(frame.rShoulderDY, nextF.rShoulderDY, t),
-        lShoulderDY: inHold ? (frame.lShoulderDY ?? 0) : lerpN(frame.lShoulderDY, nextF.lShoulderDY, t),
+        headDY:      inHold ? (frame.headDY ?? 0)      : lerp(prevState.headDY, frame.headDY ?? 0, t),
+        rShoulderDY: inHold ? (frame.rShoulderDY ?? 0) : lerp(prevState.rShoulderDY, frame.rShoulderDY ?? 0, t),
+        lShoulderDY: inHold ? (frame.lShoulderDY ?? 0) : lerp(prevState.lShoulderDY, frame.lShoulderDY ?? 0, t),
       };
 
-      // Hand shape: snap at the midpoint of the transition
-      const rHand = rawT < 0.5 ? frame.rHand : nextF.rHand;
-      const lHand = rawT < 0.5 ? frame.lHand : nextF.lHand;
+      // Snap the handshape at the midpoint of the move into this frame.
+      const rHand = rawT < 0.5 ? prevRHand : frame.rHand;
+      const lHand = rawT < 0.5 ? prevLHand : frame.lHand;
 
-      // Draw
       const ctx = ctxRef.current;
       if (ctx) {
         ctx.clearRect(0, 0, W, H);
-        drawScene(ctx, rW, lW, rHand, lHand, state);
+        const { rElbow, lElbow } = drawScene(ctx, rW, lW, rHand, lHand, state, { rElbow: rHint, lElbow: lHint });
+        rHint = rElbow;
+        lHint = lElbow;
 
-        // Progress dots — two batched fill passes
-        const total  = frames.length - 1;
+        // Progress dots
+        const total = frames.length - 1;
         const startX = W / 2 - (total * 11) / 2;
-        ctx.fillStyle = "rgba(255,255,255,0.2)";
+        ctx.fillStyle = "rgba(255,255,255,0.22)";
         ctx.beginPath();
         for (let i = 0; i <= total; i++) {
-          if (i !== fIdx) { ctx.moveTo(startX+i*11+4, H-18); ctx.arc(startX+i*11, H-18, 4, 0, 6.283); }
+          if (i !== fIdx) {
+            ctx.moveTo(startX + i * 11 + 4, H - 16);
+            ctx.arc(startX + i * 11, H - 16, 4, 0, TAU);
+          }
         }
         ctx.fill();
-        ctx.fillStyle = inHold ? "#F472B6" : "#A78BFA";
+        ctx.fillStyle = inHold ? COLORS.activeArm : COLORS.body;
         ctx.beginPath();
-        ctx.arc(startX + fIdx * 11, H - 18, 4, 0, 6.283);
+        ctx.arc(startX + fIdx * 11, H - 16, 4, 0, TAU);
         ctx.fill();
       }
 
-      // Advance
       if (elapsed >= moveDur + holdDur) {
-        fIdx++; fStart = now;
+        prevR = frame.rWrist ?? RN;
+        prevL = frame.lWrist ?? LN;
+        prevRHand = frame.rHand;
+        prevLHand = frame.lHand;
+        prevState = {
+          headDY: frame.headDY ?? 0,
+          rShoulderDY: frame.rShoulderDY ?? 0,
+          lShoulderDY: frame.lShoulderDY ?? 0,
+        };
+        fIdx++;
+        fStart = now;
         if (fIdx >= frames.length) {
-          setIsPlaying(false);
-          startBreathing();
+          playedRef.current = true;
+          setIsPlaying(false); // idle effect repaints with the "play again" caption
           return;
         }
       }
@@ -235,72 +190,48 @@ export default function ASLWordStickman() {
     };
 
     rafRef.current = requestAnimationFrame(tick);
-  }, [stopBreathing, startBreathing]);
+  }, []);
 
   const stopAnim = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
     setIsPlaying(false);
-    startBreathing();
-  }, [startBreathing]);
+    drawIdle();
+  }, [drawIdle]);
 
+  // Draw the idle frame whenever we're not playing.
   useEffect(() => {
-    startBreathing();
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      cancelAnimationFrame(breathRef.current);
-    };
-  }, [startBreathing]);
+    if (!isPlaying) drawIdle();
+  }, [isPlaying, selected, drawIdle]);
+
+  // Cleanup on unmount
+  useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "14px" }}>
-
-      {/* Mode toggle — only show pose-viewer tab if a real pose exists */}
-      <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--btn-secondary-border)" }}>
-        <button type="button" onClick={() => setViewMode("canvas")}
-          style={{ width:"auto", padding:"6px 14px", fontSize:"0.76rem", border:"none", cursor:"pointer",
-            background: viewMode==="canvas" ? "var(--stickman-btn-active-bg)" : "transparent",
-            color: viewMode==="canvas" ? "var(--stickman-btn-active-color)" : "var(--stickman-label-color)" }}>
-          Canvas stickman
-        </button>
-        <button type="button" onClick={() => setViewMode("pose-viewer")}
-          disabled={!poseUrl}
-          title={poseUrl ? "sign.mt pose-viewer (real MediaPipe data)" : "Run: python generate_asl_poses.py to generate"}
-          style={{ width:"auto", padding:"6px 14px", fontSize:"0.76rem", border:"none", cursor: poseUrl ? "pointer" : "not-allowed",
-            background: viewMode==="pose-viewer" ? "var(--stickman-btn-active-bg)" : "transparent",
-            color: poseUrl ? (viewMode==="pose-viewer" ? "var(--stickman-btn-active-color)" : "var(--stickman-label-color)") : "var(--stickman-btn-inactive-border)" }}>
-          {poseUrl ? "sign.mt renderer ✓" : "sign.mt renderer (not ready)"}
-        </button>
-      </div>
-
-      {/* sign.mt pose-viewer — exact same renderer as sign.mt */}
-      {viewMode === "pose-viewer" && poseUrl ? (
-        <pose-viewer
-          src={poseUrl}
-          autoplay
-          loop
-          background="#0F172A"
-          style={{
-            display: "block", width: `${W}px`, height: `${H}px`,
-            borderRadius: "16px", border: "1px solid var(--btn-secondary-border)",
-          }}
-        />
-      ) : (
-        <canvas ref={canvasRef} width={W} height={H}
-          style={{
-            borderRadius: "16px",
-            background: "rgba(15, 23, 42, 0.7)",
-            border: "1px solid var(--btn-secondary-border)",
-            display: "block",
-          }}
-        />
-      )}
+      <canvas
+        ref={canvasRef}
+        width={W}
+        height={H}
+        style={{
+          borderRadius: "16px",
+          background: "rgba(15, 23, 42, 0.7)",
+          border: "1px solid var(--btn-secondary-border)",
+          display: "block",
+          maxWidth: "100%",
+        }}
+      />
 
       {/* Word picker */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", maxWidth: `${W}px`, justifyContent: "center" }}>
-        {WORD_LIST.map(w => (
-          <button key={w} type="button" onClick={() => setSelected(w)}
+        {WORD_LIST.map((w) => (
+          <button
+            key={w}
+            type="button"
+            disabled={isPlaying}
+            onClick={() => setSelected(w)}
             style={{
-              width: "auto", padding: "5px 11px", fontSize: "0.76rem", cursor: "pointer",
+              width: "auto", padding: "5px 11px", fontSize: "0.76rem",
+              cursor: isPlaying ? "not-allowed" : "pointer",
               background: selected === w ? "var(--stickman-btn-active-bg)" : "var(--stickman-btn-inactive-bg)",
               border: `1px solid ${selected === w ? "var(--primary)" : "var(--stickman-btn-inactive-border)"}`,
               borderRadius: "8px",
@@ -315,11 +246,15 @@ export default function ASLWordStickman() {
       {/* Controls */}
       <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
         <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--btn-secondary-border)" }}>
-          {["slow", "normal"].map(s => (
-            <button key={s} type="button" onClick={() => setSpeed(s)}
+          {["slow", "normal"].map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setSpeed(s)}
               style={{
                 width: "auto", padding: "7px 16px", fontSize: "0.78rem", border: "none",
-                background: speed === s ? "var(--stickman-btn-active-bg)" : "transparent", cursor: "pointer",
+                background: speed === s ? "var(--stickman-btn-active-bg)" : "transparent",
+                cursor: "pointer",
                 color: speed === s ? "var(--stickman-btn-active-color)" : "var(--stickman-label-color)",
               }}
             >
@@ -327,12 +262,13 @@ export default function ASLWordStickman() {
             </button>
           ))}
         </div>
-        <button type="button"
+        <button
+          type="button"
           onClick={isPlaying ? stopAnim : () => playWord(selected, SPEED_MULT[speed])}
           style={{
             width: "auto", padding: "9px 28px", fontSize: "0.92rem", borderRadius: "9px", cursor: "pointer",
             background: isPlaying ? "var(--danger)" : "var(--primary)",
-            color: "#ffffff"
+            color: "#ffffff",
           }}
         >
           {isPlaying ? "◼ Stop" : "▶ Play"}
@@ -341,7 +277,7 @@ export default function ASLWordStickman() {
 
       {WORD_ANIMS[selected] && (
         <p style={{ color: "var(--stickman-label-color)", margin: 0, fontSize: "0.8rem", textAlign: "center" }}>
-          <span style={{ color: "var(--secondary)", fontWeight: "600" }}>{selected}</span>
+          <span style={{ color: "var(--secondary)", fontWeight: 600 }}>{selected}</span>
           {" — "}{WORD_ANIMS[selected].description}
         </p>
       )}
