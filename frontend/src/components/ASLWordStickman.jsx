@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ASL_POSES } from "../utils/aslHandPoses";
-import { WORD_ANIMS, WORD_LIST, RN, LN } from "../utils/aslWordPoses";
+import { WORD_ANIMS, WORD_CATEGORIES, RN, LN } from "../utils/aslWordPoses";
 import { COLORS, EASE, drawHand, lerpXY, lerp, solveArm } from "../utils/aslRenderer";
 
 const W = 320;
@@ -76,6 +76,11 @@ export default function ASLWordStickman() {
   const [selected, setSelected] = useState("HELLO");
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState("slow");
+  const [category, setCategory] = useState(WORD_CATEGORIES[0].id);
+
+  const wordsInCategory = Object.keys(WORD_ANIMS).filter(
+    (w) => WORD_ANIMS[w].category === category
+  );
 
   // Cache context once
   useEffect(() => {
@@ -221,9 +226,37 @@ export default function ASLWordStickman() {
         }}
       />
 
+      {/* Category tabs */}
+      <div style={{ display: "flex", gap: "6px", maxWidth: `${W}px`, justifyContent: "center" }}>
+        {WORD_CATEGORIES.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            disabled={isPlaying}
+            onClick={() => {
+              setCategory(c.id);
+              const firstInCategory = Object.keys(WORD_ANIMS).find(
+                (w) => WORD_ANIMS[w].category === c.id
+              );
+              if (firstInCategory) setSelected(firstInCategory);
+            }}
+            style={{
+              width: "auto", padding: "5px 13px", fontSize: "0.76rem", fontWeight: 600,
+              cursor: isPlaying ? "not-allowed" : "pointer",
+              background: category === c.id ? "var(--secondary)" : "transparent",
+              border: `1px solid ${category === c.id ? "var(--secondary)" : "var(--stickman-btn-inactive-border)"}`,
+              borderRadius: "8px",
+              color: category === c.id ? "#ffffff" : "var(--stickman-label-color)",
+            }}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+
       {/* Word picker */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", maxWidth: `${W}px`, justifyContent: "center" }}>
-        {WORD_LIST.map((w) => (
+        {wordsInCategory.map((w) => (
           <button
             key={w}
             type="button"

@@ -493,6 +493,35 @@ button:disabled {
   line-height: 1.5;
 }
 
+.edu-subnav {
+  display: flex;
+  gap: 4px;
+  background: var(--tab-container-bg);
+  padding: 3px;
+  border-radius: 9px;
+  flex-shrink: 0;
+}
+
+.edu-subnav button {
+  width: auto;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 5px 10px;
+  border-radius: 7px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.edu-subnav .active {
+  background: var(--tab-active-bg);
+  color: var(--tab-active-color);
+}
+
+.edu-subnav button:hover:not(.active) {
+  color: var(--text-main);
+}
+
 @media (max-width: 760px) {
   .edu-grid {
     grid-template-columns: 1fr;

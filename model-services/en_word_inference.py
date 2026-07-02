@@ -129,7 +129,9 @@ def predict_word(video_base64: str) -> dict:
     if top_conf < MIN_CONFIDENCE:
         return {
             "text": "",
-            "message": f"Low confidence ({top_conf:.2f}). Please try again."
+            "confidence": top_conf,
+            "message": f"Low confidence ({top_conf:.2f}). Please try again.",
+            "raw_label": word,
         }
 
     return {

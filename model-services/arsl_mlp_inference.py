@@ -50,10 +50,8 @@ def landmarks_list_to_features(landmarks: list[float]) -> np.ndarray | None:
 def _get_model():
     global _model
     if _model is None:
-        if not MODEL_PATH.exists():
-            raise FileNotFoundError(f"Model not found at {MODEL_PATH}")
-        import tensorflow as tf
-        _model = tf.keras.models.load_model(MODEL_PATH)
+        from legacy_h5 import load_legacy_h5
+        _model = load_legacy_h5(MODEL_PATH)
     return _model
 
 

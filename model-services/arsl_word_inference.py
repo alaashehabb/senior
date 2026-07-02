@@ -28,10 +28,8 @@ _holistic = None
 def _get_model():
     global _model
     if _model is None:
-        if not MODEL_PATH.exists():
-            raise FileNotFoundError(f"Model not found at {MODEL_PATH}")
-        import tensorflow as tf
-        _model = tf.keras.models.load_model(MODEL_PATH)
+        from legacy_h5 import load_legacy_h5
+        _model = load_legacy_h5(MODEL_PATH)
     return _model
 
 def _get_holistic():
@@ -135,6 +133,20 @@ def predict_word(*, video_base64: str = None) -> dict:
     
     class_idx = int(np.argmax(prediction))
     confidence = float(prediction[class_idx])
+
+    # The deployed BiLSTM has 100 output classes (KArSL-100, per the
+    # "3 signers" notebook this was ported from), but WORDS only names 32
+    # of them. Until the full 100-class list from the training notebook is
+    # added, an out-of-range argmax is "a sign we can't name", not a crash.
+    if class_idx >= len(WORDS):
+        print(f"[ARSL Words] predicted class idx {class_idx} has no label (WORDS has {len(WORDS)}), confidence: {confidence:.3f}")
+        return {
+            "text": "",
+            "confidence": confidence,
+            "source": "arsl-words-bilstm",
+            "message": "Sign not in the supported vocabulary. Please try again.",
+        }
+
     label = WORDS[class_idx]
     
     print(f"[ARSL Words] predicted class idx: {class_idx}, confidence: {confidence:.3f}")

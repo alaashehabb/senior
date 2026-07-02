@@ -15,11 +15,16 @@ import numpy as np
 
 MODEL_PATH = Path(__file__).parent / "models" / "asl_mediapipe_mlp_model_engineered.h5"
 
+# The deployed model has 28 output classes (verified against the .h5), not
+# the Kaggle dataset's 29: the "nothing" class contains no hand, so MediaPipe
+# extracts no landmarks from it and it necessarily fell out of this
+# landmark-feature training pipeline. Listing 29 labels here shifted every
+# index after "Z", so index 27 ("space") was mislabeled as "nothing".
 CLASS_LABELS = [
     "A", "B", "C", "D", "E", "F", "G", "H",
     "I", "J", "K", "L", "M", "N", "O", "P",
     "Q", "R", "S", "T", "U", "V", "W", "X",
-    "Y", "Z", "del", "nothing", "space",
+    "Y", "Z", "del", "space",
 ]
 
 ANGLE_TRIPLETS = [
@@ -74,10 +79,8 @@ def landmarks_list_to_features(landmarks: list[float]) -> np.ndarray | None:
 def _get_model():
     global _model
     if _model is None:
-        if not MODEL_PATH.exists():
-            raise FileNotFoundError(f"Model not found at {MODEL_PATH}")
-        import tensorflow as tf
-        _model = tf.keras.models.load_model(MODEL_PATH)
+        from legacy_h5 import load_legacy_h5
+        _model = load_legacy_h5(MODEL_PATH)
     return _model
 
 

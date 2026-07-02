@@ -4,5 +4,9 @@ python-multipart
 numpy>=1.23.5,<2.0.0
 opencv-python-headless<4.12
 mediapipe==0.10.14
-tensorflow==2.15.1
+# The MLP/BiLSTM .h5 models were trained on TF/Keras 2.10, but tensorflow
+# 2.15.x cannot be installed on Python 3.12. They run instead on standalone
+# Keras 3 with the torch backend, via legacy_h5.py.
+keras>=3.14
+torch
 pose-format

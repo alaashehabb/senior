@@ -300,6 +300,48 @@ POSES.ILY = pose(
   seg4(PM, 84, SL.pnk, STR),                    // pinky up
 );
 
+// ── Numbers 1-5 (citation form, palm facing viewer) ───────────────────────────
+// Distinct from the manual alphabet but built with the same helper vocabulary.
+
+// ─ ONE: index straight up, thumb tucked at the side (like a fist with 1 finger) ─
+POSES.ONE = pose(
+  thumb(0.30, 0.78, 0.27, 0.71, 0.25, 0.64),
+  seg4(IM, 89, SL.idx, STR),
+  seg4(MM, 90, SL.mid, CURL),
+  seg4(RM, 88, SL.rng, CURL),
+  seg4(PM, 82, SL.pnk, TIGHT),
+);
+
+// ─ TWO: index + middle up, spread — same handshape as the letter V ───────────
+POSES.TWO = POSES.V;
+
+// ─ THREE: thumb + index + middle extended ─────────────────────────────────────
+POSES.THREE = pose(
+  thumb(0.26, 0.76, 0.20, 0.68, 0.16, 0.60),
+  seg4(IM, 84, SL.idx, STR),
+  seg4([0.49, 0.68], 96, SL.mid, STR),
+  seg4(RM, 88, SL.rng, CURL),
+  seg4(PM, 82, SL.pnk, TIGHT),
+);
+
+// ─ FOUR: index + middle + ring + pinky up, thumb folded across the palm ──────
+POSES.FOUR = pose(
+  thumb(0.32, 0.80, 0.40, 0.78, 0.47, 0.76),
+  seg4([0.37, 0.71], 86, SL.idx, STR),
+  seg4([0.46, 0.69], 90, SL.mid, STR),
+  seg4([0.55, 0.70], 94, SL.rng, STR),
+  seg4([0.63, 0.73], 98, SL.pnk, STR),
+);
+
+// ─ FIVE: all five fingers extended and spread, thumb out ─────────────────────
+POSES.FIVE = pose(
+  thumb(0.22, 0.76, 0.14, 0.68, 0.09, 0.60),
+  seg4([0.37, 0.71], 82, SL.idx, STR),
+  seg4([0.46, 0.69], 90, SL.mid, STR),
+  seg4([0.55, 0.70], 98, SL.rng, STR),
+  seg4([0.63, 0.73], 106, SL.pnk, STR),
+);
+
 // ─ Space: relaxed open hand ──────────────────────────────────────────────────
 POSES[" "] = pose(
   thumb(0.24, 0.82, 0.16, 0.80, 0.11, 0.77),
@@ -340,6 +382,14 @@ export const ASL_HINTS = {
   Y: "Thumb + pinky out (“hang loose”)",
   Z: "Index out — draw a Z in the air",
   " ": "Space",
+  // Numbers 1-5 (not part of the fingerspelling alphabet, shared here for
+  // consistency so any future feature — e.g. a quiz mode — can look up a
+  // caption the same way it does for letters).
+  ONE: "Index finger up, thumb tucked",
+  TWO: "Index + middle up, spread apart",
+  THREE: "Thumb + index + middle extended",
+  FOUR: "Four fingers up, thumb folded in",
+  FIVE: "All five fingers spread open",
 };
 
 // Letters whose meaning depends on movement (the hand traces the shape).

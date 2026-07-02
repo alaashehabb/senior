@@ -3,8 +3,8 @@ import { io } from "socket.io-client";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import api from "../services/api";
-import ASLStickman from "../components/ASLStickman";
-import ASLWordStickman from "../components/ASLWordStickman";
+import { useCamera } from "../utils/useCamera";
+import EducationTab from "./EducationTab";
 
 function AppHomePage() {
   const { user, logout } = useAuth();
@@ -13,11 +13,7 @@ function AppHomePage() {
   const [language, setLanguage] = useState("en");
   const [mode, setMode] = useState("letters");
   const [predictedText, setPredictedText] = useState("");
-  const [status, setStatus] = useState("Camera is off");
   const [sending, setSending] = useState(false);
-  const [cameraOn, setCameraOn] = useState(false);
-  const [videoDevices, setVideoDevices] = useState([]);
-  const [selectedDeviceId, setSelectedDeviceId] = useState("");
   const [messages, setMessages] = useState([]);
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
@@ -26,99 +22,22 @@ function AppHomePage() {
   const [chatStatus, setChatStatus] = useState("Choose a user to start chat.");
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const videoRef = useRef(null);
-  const streamRef = useRef(null);
+  const {
+    videoRef,
+    cameraOn,
+    status,
+    setStatus,
+    videoDevices,
+    selectedDeviceId,
+    setSelectedDeviceId,
+    startCamera,
+    stopCamera,
+    captureImageBase64,
+    recordVideoBase64,
+  } = useCamera();
+
   const socketRef = useRef(null);
   const chatEndRef = useRef(null);
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    setCameraOn(false);
-    setStatus("Camera is off");
-  };
-
-  const startCamera = async () => {
-    try {
-      const videoConstraints = selectedDeviceId
-        ? { deviceId: { exact: selectedDeviceId }, width: 640, height: 480 }
-        : { facingMode: "user", width: 640, height: 480 };
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: videoConstraints,
-        audio: false,
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      setCameraOn(true);
-      setStatus("Camera is ready");
-    } catch (error) {
-      console.error("Camera access error:", error);
-      if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
-        setStatus(
-          "📷 Camera access denied. Please click the camera icon in your browser's address bar, allow access, and refresh the page."
-        );
-      } else if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
-        setStatus("📷 No camera found. Please connect a webcam and try again.");
-      } else {
-        setStatus("📷 Cannot access camera. Please check your device settings and try again.");
-      }
-    }
-  };
-
-  const captureImageBase64 = () => {
-    const video = videoRef.current;
-    if (!video || !cameraOn) return null;
-
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL("image/jpeg", 0.85);
-  };
-
-  const recordVideoBase64 = (durationMs) => {
-    return new Promise((resolve, reject) => {
-      const video = videoRef.current;
-      if (!video || !video.srcObject) return resolve(null);
-
-      try {
-        const stream = video.srcObject;
-        const mediaRecorder = new MediaRecorder(stream);
-        const chunks = [];
-
-        mediaRecorder.ondataavailable = (e) => {
-          if (e.data && e.data.size > 0) chunks.push(e.data);
-        };
-
-        mediaRecorder.onstop = () => {
-          const blob = new Blob(chunks);
-          const reader = new FileReader();
-          reader.readAsDataURL(blob);
-          reader.onloadend = () => resolve(reader.result);
-          reader.onerror = () => reject(new Error("Failed to read video blob"));
-        };
-
-        mediaRecorder.start();
-        setTimeout(() => {
-          if (mediaRecorder.state === "recording") {
-            mediaRecorder.stop();
-          }
-        }, durationMs);
-      } catch (err) {
-        reject(err);
-      }
-    });
-  };
 
   const handlePredict = async () => {
     let payload = { language, mode };
@@ -216,38 +135,6 @@ function AppHomePage() {
     });
   };
 
-  useEffect(() => stopCamera, []);
-
-  useEffect(() => {
-    async function loadVideoDevices() {
-      if (!navigator.mediaDevices?.enumerateDevices) {
-        setStatus("Your browser does not support webcam device selection.");
-        return;
-      }
-
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoInputs = devices.filter((device) => device.kind === "videoinput");
-        setVideoDevices(videoInputs);
-
-        if (videoInputs.length === 0) {
-          setStatus("No camera devices found.");
-          return;
-        }
-
-        const internalCamera = videoInputs.find((device) =>
-          /integrated|internal|built-in|front|face/i.test(device.label)
-        );
-
-        setSelectedDeviceId(internalCamera?.deviceId || videoInputs[0].deviceId);
-      } catch (error) {
-        console.error("Failed to enumerate camera devices:", error);
-      }
-    }
-
-    loadVideoDevices();
-  }, []);
-
   useEffect(() => {
     setUsersLoading(true);
     api
@@ -289,7 +176,7 @@ function AppHomePage() {
     const token = localStorage.getItem("slr_token");
     if (!token) return undefined;
 
-    const socket = io("http://localhost:3000", { auth: { token } });
+    const socket = io("http://localhost:5000", { auth: { token } });
 
     socket.on("connect", () => {
       setChatStatus("Connected. Select a user to chat.");
@@ -543,42 +430,7 @@ function AppHomePage() {
             </section>
           </div>
         ) : (
-          <section className="tab-panel">
-            <div className="edu-intro">
-              <h3 style={{ margin: 0 }}>Learn to Sign</h3>
-              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", margin: 0 }}>
-                Practice ASL two ways: fingerspell any word letter-by-letter, or watch the
-                stickman sign common everyday words. Each sign shows a plain-language cue —
-                tap a letter to freeze on its handshape.
-              </p>
-            </div>
-
-            <div className="edu-grid">
-              {/* Left: letter fingerspelling */}
-              <div className="edu-col">
-                <h4 className="edu-col-title" style={{ color: "var(--primary)" }}>
-                  Fingerspelling · A–Z
-                </h4>
-                <p className="edu-col-sub">
-                  Type a word and press Play to spell it out. The hand morphs smoothly between
-                  letters; J and Z are traced in the air.
-                </p>
-                <ASLStickman />
-              </div>
-
-              {/* Right: full-body word signing */}
-              <div className="edu-col">
-                <h4 className="edu-col-title" style={{ color: "var(--secondary)" }}>
-                  Word Signs · Full Body
-                </h4>
-                <p className="edu-col-sub">
-                  Pick a word and watch the full-body sign. Use 🐢 Slow to study the motion,
-                  then ⚡ Normal for natural speed.
-                </p>
-                <ASLWordStickman />
-              </div>
-            </div>
-          </section>
+          <EducationTab />
         )}
       </div>
     </main>
