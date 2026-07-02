@@ -119,6 +119,50 @@ def predict(payload: PredictRequest):
 
 # ── ASL Pose endpoints ────────────────────────────────────────────────────────
 
+def _parse_seq_params(items: str, mode: str) -> tuple[tuple[str, ...], str]:
+    names = tuple(n.strip().lower() for n in items.split(",") if n.strip())
+    if not names:
+        raise HTTPException(status_code=400, detail="items is required (comma-separated)")
+    if len(names) > 30:
+        raise HTTPException(status_code=400, detail="Too many items (max 30)")
+    if mode not in ("words", "spell"):
+        raise HTTPException(status_code=400, detail="mode must be 'words' or 'spell'")
+    return names, mode
+
+
+@app.get("/api/pose-seq")
+def get_pose_seq(items: str, mode: str = "words"):
+    """
+    One smooth, continuous .pose stitched from several signs — sign.mt's own
+    concatenation (trim/connect/interpolate/smooth), so sentence playback and
+    fingerspelling flow like natural signing instead of separate clips.
+    mode="spell" holds each letter's peak handshape at a uniform rhythm.
+    """
+    names, mode = _parse_seq_params(items, mode)
+    try:
+        from pose_concat import build_sequence
+        data, _ = build_sequence(names, mode)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return Response(
+        content=data,
+        media_type="application/octet-stream",
+        headers={"Cache-Control": "no-cache"},
+    )
+
+
+@app.get("/api/pose-seq/meta")
+def get_pose_seq_meta(items: str, mode: str = "words"):
+    """Per-segment durations (ms, final stitched timeline) for UI highlights."""
+    names, mode = _parse_seq_params(items, mode)
+    try:
+        from pose_concat import build_sequence
+        _, durations = build_sequence(names, mode)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return {"items": list(names), "durations_ms": list(durations), "total_ms": sum(durations)}
+
+
 def _pose_path(word: str) -> Path:
     slug = word.lower().replace(" ", "_").replace("%20", "_")
     return POSES_DIR / f"{slug}.pose"

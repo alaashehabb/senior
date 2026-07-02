@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ASL_POSES } from "../../utils/aslHandPoses";
 import { WORD_ANIMS, WORD_CATEGORIES, RN, LN } from "../../utils/aslWordPoses";
 import { COLORS, EASE, drawHand, lerpXY, lerp, solveArm } from "../../utils/aslRenderer";
+import { usePoseWords, hasPose, poseUrl, poseSeqUrl, fetchPoseSeqMeta } from "../../utils/poseViewer";
 
 // Chain several ASLWordStickman signs into one sentence playback.
 //
@@ -73,12 +74,18 @@ export default function SentenceBuilder() {
   const ctxRef = useRef(null);
   const rafRef = useRef(null);
   const cancelledRef = useRef(false);
+  const poseElRef = useRef(null); // the <pose-viewer> element, driven imperatively
 
   const [category, setCategory] = useState(WORD_CATEGORIES[0].id);
   const [sentence, setSentence] = useState([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playingIdx, setPlayingIdx] = useState(-1);
   const [speed, setSpeed] = useState("slow");
+  // Which surface is showing: the sign.mt skeleton (words with a .pose file)
+  // or the legacy canvas (everything else). Switches per word mid-sentence.
+  const [activeView, setActiveView] = useState("canvas");
+
+  const poseWords = usePoseWords();
 
   const wordsInCategory = Object.keys(WORD_ANIMS).filter(
     (w) => WORD_ANIMS[w].category === category
@@ -86,6 +93,13 @@ export default function SentenceBuilder() {
 
   useEffect(() => {
     ctxRef.current = canvasRef.current?.getContext("2d");
+    // autoplay={false} can't reach a lazily-upgraded custom element through
+    // JSX (false attributes are removed and the component defaults to true),
+    // so force the properties here; playback is driven by playOnePoseWord.
+    if (poseElRef.current) {
+      poseElRef.current.autoplay = false;
+      poseElRef.current.loop = false;
+    }
   }, []);
 
   const drawIdle = useCallback(() => {
@@ -169,30 +183,110 @@ export default function SentenceBuilder() {
     });
   }, []);
 
+  // Plays one .pose URL on the sign.mt skeleton viewer. Resolves on the
+  // viewer's ended$ event, on cancellation (polled — the web component has
+  // no abort API), or on a hard timeout so a bad file can never wedge the
+  // sentence.
+  const playPoseSrc = useCallback((url, rate) => {
+    return new Promise((resolve) => {
+      const el = poseElRef.current;
+      if (!el) return resolve();
+
+      let done = false;
+      let pollId, capId;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        clearInterval(pollId);
+        clearTimeout(capId);
+        el.removeEventListener("ended$", finish);
+        el.removeEventListener("loadeddata$", start);
+        resolve();
+      };
+      const start = () => {
+        el.playbackRate = rate;
+        el.currentTime = 0;
+        el.play();
+      };
+
+      el.addEventListener("ended$", finish);
+      if (el.src === url) {
+        start(); // already loaded — loadeddata$ won't re-fire
+      } else {
+        el.addEventListener("loadeddata$", start);
+        el.src = url;
+      }
+      pollId = setInterval(() => {
+        if (cancelledRef.current) { el.pause(); finish(); }
+      }, 100);
+      capId = setTimeout(finish, 60000);
+    });
+  }, []);
+
+  const chipTimersRef = useRef([]);
+  const clearChipTimers = useCallback(() => {
+    chipTimersRef.current.forEach(clearTimeout);
+    chipTimersRef.current = [];
+  }, []);
+
   const playSentence = useCallback(async () => {
     if (sentence.length === 0) return;
     cancelledRef.current = false;
     setIsPlaying(true);
     const mult = SPEED_MULT[speed];
+    const rate = speed === "slow" ? 0.5 : 1;
+
+    // Preferred path: every word has a .pose file, so the server stitches the
+    // whole sentence into ONE smooth continuous sequence (sign.mt's own
+    // trim/connect/interpolate) — no reload hitch between words. Chips are
+    // highlighted on timers from the stitch's per-word durations.
+    if (sentence.every((w) => hasPose(poseWords, w))) {
+      try {
+        const meta = await fetchPoseSeqMeta(sentence, "words");
+        if (!cancelledRef.current) {
+          setActiveView("pose");
+          let atMs = 0;
+          chipTimersRef.current = sentence.map((w, i) => {
+            const timer = setTimeout(() => setPlayingIdx(i), atMs / rate);
+            atMs += meta.durations_ms[i];
+            return timer;
+          });
+          await playPoseSrc(poseSeqUrl(sentence, "words"), rate);
+        }
+        clearChipTimers();
+        setPlayingIdx(-1);
+        setIsPlaying(false);
+        setActiveView("canvas");
+        return;
+      } catch {
+        clearChipTimers(); // stitch endpoint unreachable — per-word fallback
+      }
+    }
 
     for (let i = 0; i < sentence.length; i++) {
       if (cancelledRef.current) break;
       setPlayingIdx(i);
-      await playOneWord(sentence[i], mult);
+      const usePose = hasPose(poseWords, sentence[i]);
+      setActiveView(usePose ? "pose" : "canvas");
+      await (usePose ? playPoseSrc(poseUrl(sentence[i]), rate) : playOneWord(sentence[i], mult));
       if (cancelledRef.current) break;
       await new Promise((r) => setTimeout(r, WORD_GAP_MS));
     }
 
     setPlayingIdx(-1);
     setIsPlaying(false);
-  }, [sentence, speed, playOneWord]);
+    setActiveView("canvas");
+  }, [sentence, speed, playOneWord, playPoseSrc, poseWords, clearChipTimers]);
 
   const stopSentence = useCallback(() => {
     cancelledRef.current = true;
     cancelAnimationFrame(rafRef.current);
+    clearChipTimers();
+    poseElRef.current?.pause();
     setIsPlaying(false);
     setPlayingIdx(-1);
-  }, []);
+    setActiveView("canvas");
+  }, [clearChipTimers]);
 
   useEffect(() => {
     if (!isPlaying) drawIdle();
@@ -220,6 +314,24 @@ export default function SentenceBuilder() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "14px" }}>
+      {/* Both surfaces stay mounted; per-word playback toggles which shows so
+          the pose viewer keeps its loaded file and the canvas keeps its 2D
+          context across the sentence. */}
+      <pose-viewer
+        ref={poseElRef}
+        loop={false}
+        autoplay={false}
+        thickness={6}
+        style={{
+          borderRadius: "16px",
+          background: "rgba(15, 23, 42, 0.7)",
+          border: "1px solid var(--btn-secondary-border)",
+          display: activeView === "pose" ? "block" : "none",
+          width: "100%",
+          maxWidth: `${W}px`,
+          height: "420px",
+        }}
+      />
       <canvas
         ref={canvasRef}
         width={W}
@@ -228,7 +340,7 @@ export default function SentenceBuilder() {
           borderRadius: "16px",
           background: "rgba(15, 23, 42, 0.7)",
           border: "1px solid var(--btn-secondary-border)",
-          display: "block",
+          display: activeView === "pose" ? "none" : "block",
           maxWidth: "100%",
         }}
       />

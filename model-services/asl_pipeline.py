@@ -47,6 +47,13 @@ def _find_node() -> Optional[str]:
     return None
 
 # ── Curated YouTube video IDs for common ASL signs ────────────────────────────
+# ⚠ SUPERSEDED (July 2026): every video ID below now returns "Video
+# unavailable" on YouTube, so this download path is dead. New .pose content
+# comes from sign.mt's public dictionary API instead — see
+# fetch_signmt_pose.py. This pipeline is kept for the local-video path
+# (generate_pose_from_file / the /api/poses/{word}/upload endpoint), which
+# still works and lets you record signs yourself.
+#
 # Each entry: word → (youtube_id, start_sec, end_sec)
 # Source: publicly available ASL tutorial channels (Bill Vicars / ASLU,
 #         Signed With Heart, ASL Meredith) – all educational / public use.

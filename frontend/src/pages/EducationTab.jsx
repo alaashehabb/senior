@@ -1,5 +1,4 @@
 import { useState } from "react";
-import ASLStickman from "../components/ASLStickman";
 import ASLWordStickman from "../components/ASLWordStickman";
 import SentenceBuilder from "../components/education/SentenceBuilder";
 import PracticePanel from "../components/education/PracticePanel";
@@ -36,55 +35,40 @@ function EducationTab() {
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", margin: 0 }}>
           {eduView === "learn"
-            ? "Practice ASL two ways: fingerspell any word letter-by-letter, or watch the stickman sign common everyday words. Each sign shows a plain-language cue — tap a letter to freeze on its handshape."
+            ? "Watch real signing as a motion-capture skeleton: pick a word, build a sentence, or fingerspell anything letter by letter. Each sign shows a plain-language cue."
             : "Show the target sign to your webcam and get instant feedback from the same recognition model used in live translation."}
         </p>
       </div>
 
       {eduView === "learn" ? (
-        <div className="edu-grid">
-          {/* Left: letter fingerspelling */}
-          <div className="edu-col">
-            <h4 className="edu-col-title" style={{ color: "var(--primary)" }}>
-              Fingerspelling · A–Z
+        <div className="edu-col" style={{ maxWidth: "560px", margin: "0 auto" }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "10px" }}>
+            <h4 className="edu-col-title" style={{ color: "var(--secondary)", margin: 0 }}>
+              ASL Signs · Full Body
             </h4>
-            <p className="edu-col-sub">
-              Type a word and press Play to spell it out. The hand morphs smoothly between
-              letters; J and Z are traced in the air.
-            </p>
-            <ASLStickman />
-          </div>
-
-          {/* Right: full-body word signing, with a Single Word / Sentence Builder toggle */}
-          <div className="edu-col">
-            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "10px" }}>
-              <h4 className="edu-col-title" style={{ color: "var(--secondary)", margin: 0 }}>
-                Word Signs · Full Body
-              </h4>
-              <div className="edu-subnav">
-                <button
-                  type="button"
-                  className={wordView === "single" ? "active" : ""}
-                  onClick={() => setWordView("single")}
-                >
-                  Single Word
-                </button>
-                <button
-                  type="button"
-                  className={wordView === "sentence" ? "active" : ""}
-                  onClick={() => setWordView("sentence")}
-                >
-                  Sentence Builder
-                </button>
-              </div>
+            <div className="edu-subnav">
+              <button
+                type="button"
+                className={wordView === "single" ? "active" : ""}
+                onClick={() => setWordView("single")}
+              >
+                Sign Viewer
+              </button>
+              <button
+                type="button"
+                className={wordView === "sentence" ? "active" : ""}
+                onClick={() => setWordView("sentence")}
+              >
+                Sentence Builder
+              </button>
             </div>
-            <p className="edu-col-sub">
-              {wordView === "single"
-                ? "Pick a word and watch the full-body sign. Use 🐢 Slow to study the motion, then ⚡ Normal for natural speed."
-                : "Add several words to a sentence, then play them back-to-back — great for practicing short phrases."}
-            </p>
-            {wordView === "single" ? <ASLWordStickman /> : <SentenceBuilder />}
           </div>
+          <p className="edu-col-sub">
+            {wordView === "single"
+              ? "Pick a word — or open 🔤 Fingerspelling to spell anything — and watch the sign. Use 🐢 Slow to study the motion, then ⚡ Normal for natural speed."
+              : "Add several words to a sentence, then play them back-to-back — great for practicing short phrases."}
+          </p>
+          {wordView === "single" ? <ASLWordStickman /> : <SentenceBuilder />}
         </div>
       ) : (
         <div className="edu-col" style={{ maxWidth: "560px" }}>

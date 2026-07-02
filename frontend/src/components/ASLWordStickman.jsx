@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ASL_POSES } from "../utils/aslHandPoses";
+import { ASL_POSES, ASL_HINTS } from "../utils/aslHandPoses";
 import { WORD_ANIMS, WORD_CATEGORIES, RN, LN } from "../utils/aslWordPoses";
 import { COLORS, EASE, drawHand, lerpXY, lerp, solveArm } from "../utils/aslRenderer";
+import { usePoseWords, hasPose, poseUrl, poseSeqUrl, fetchPoseSeqMeta } from "../utils/poseViewer";
 
 const W = 320;
 const H = 500;
@@ -18,6 +19,14 @@ const L_HINT = [42, 165];
 
 const RELAXED = ASL_POSES[" "];
 const SPEED_MULT = { slow: 1.0, normal: 0.55 };
+const LETTER_GAP_MS = 150; // pause between fingerspelled letters
+const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+// The Fingerspelling tab lives alongside the word categories but plays
+// per-letter .pose clips (a.pose … z.pose, fetched from sign.mt) instead of
+// picking from WORD_ANIMS.
+const FINGERSPELL_TAB = { id: "fingerspell", label: "🔤 Fingerspelling" };
+const TABS = [...WORD_CATEGORIES, FINGERSPELL_TAB];
 
 // ── Whole scene: stick body (IK arms) + two hands ─────────────────────────────
 // `hint` biases which of the two elbow-bend solutions to use. Pass the
@@ -77,10 +86,134 @@ export default function ASLWordStickman() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState("slow");
   const [category, setCategory] = useState(WORD_CATEGORIES[0].id);
+  const [spellInput, setSpellInput] = useState("");
+  const [lastLetter, setLastLetter] = useState(null);
+
+  // Words with a .pose file play as a sign.mt skeleton captured from a real
+  // signer; the rest fall back to the hand-authored canvas animation.
+  // Fingerspelling is always pose-based (per-letter clips).
+  const poseWords = usePoseWords();
+  const isFingerspell = category === FINGERSPELL_TAB.id;
+  const poseMode = isFingerspell || hasPose(poseWords, selected);
+  const rate = speed === "slow" ? 0.5 : 1;
 
   const wordsInCategory = Object.keys(WORD_ANIMS).filter(
     (w) => WORD_ANIMS[w].category === category
   );
+
+  // ── sign.mt skeleton playback (imperative <pose-viewer>) ────────────────────
+  const poseElRef = useRef(null);
+  const cancelledPoseRef = useRef(false);
+
+  useEffect(() => {
+    const el = poseElRef.current;
+    if (!el) return;
+    // autoplay={false} can't reach a lazily-upgraded custom element through
+    // JSX (a false attribute is removed and the component defaults to true).
+    el.autoplay = false;
+    el.loop = false;
+  }, []);
+
+  // While idle, preview the selected word's first frame.
+  useEffect(() => {
+    const el = poseElRef.current;
+    if (!el || isPlaying || isFingerspell) return;
+    if (hasPose(poseWords, selected)) el.src = poseUrl(selected);
+  }, [selected, poseWords, isFingerspell, isPlaying]);
+
+  // Plays one .pose URL to completion; resolves on ended$, cancellation
+  // (polled — the component has no abort API), or a hard timeout.
+  const playPoseUrl = useCallback((url, playbackRate) => {
+    return new Promise((resolve) => {
+      const el = poseElRef.current;
+      if (!el) return resolve();
+      let done = false;
+      let pollId, capId;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        clearInterval(pollId);
+        clearTimeout(capId);
+        el.removeEventListener("ended$", finish);
+        el.removeEventListener("loadeddata$", start);
+        resolve();
+      };
+      const start = () => {
+        el.playbackRate = playbackRate;
+        el.currentTime = 0;
+        el.play();
+      };
+      el.addEventListener("ended$", finish);
+      if (el.src === url) {
+        start(); // already loaded — loadeddata$ won't re-fire
+      } else {
+        el.addEventListener("loadeddata$", start);
+        el.src = url;
+      }
+      pollId = setInterval(() => {
+        if (cancelledPoseRef.current) { el.pause(); finish(); }
+      }, 100);
+      capId = setTimeout(finish, 30000);
+    });
+  }, []);
+
+  const playPoseSequence = useCallback(async (urls, playbackRate) => {
+    cancelledPoseRef.current = false;
+    setIsPlaying(true);
+    for (let i = 0; i < urls.length; i++) {
+      if (cancelledPoseRef.current) break;
+      await playPoseUrl(urls[i], playbackRate);
+      if (cancelledPoseRef.current || i === urls.length - 1) break;
+      await new Promise((r) => setTimeout(r, LETTER_GAP_MS));
+    }
+    setIsPlaying(false);
+  }, [playPoseUrl]);
+
+  const spellTimersRef = useRef([]);
+  const clearSpellTimers = useCallback(() => {
+    spellTimersRef.current.forEach(clearTimeout);
+    spellTimersRef.current = [];
+  }, []);
+
+  const stopPose = useCallback(() => {
+    cancelledPoseRef.current = true;
+    clearSpellTimers();
+    poseElRef.current?.pause();
+    setIsPlaying(false);
+  }, [clearSpellTimers]);
+
+  // Fingerspell the typed word as ONE stitched pose sequence (smooth,
+  // uniform letter rhythm), highlighting each letter as it plays. Falls back
+  // to letter-by-letter clips if the stitch endpoint is unreachable.
+  const spellCurrentInput = async () => {
+    const letters = spellInput.toLowerCase().replace(/[^a-z]/g, "").split("");
+    if (letters.length === 0) return;
+    setLastLetter(null);
+    try {
+      const meta = await fetchPoseSeqMeta(letters, "spell");
+      cancelledPoseRef.current = false;
+      setIsPlaying(true);
+      let atMs = 0;
+      spellTimersRef.current = letters.map((l, i) => {
+        const timer = setTimeout(() => setLastLetter(l.toUpperCase()), atMs / rate);
+        atMs += meta.durations_ms[i];
+        return timer;
+      });
+      await playPoseUrl(poseSeqUrl(letters, "spell"), rate);
+      clearSpellTimers();
+      setIsPlaying(false);
+    } catch {
+      playPoseSequence(letters.map((l) => poseUrl(l)), rate);
+    }
+  };
+
+  const playLetter = (letter) => {
+    setLastLetter(letter);
+    // Single-letter "spell" stitch = just the trimmed, held peak handshape.
+    playPoseSequence([poseSeqUrl([letter], "spell")], rate);
+  };
+
+  useEffect(() => () => { cancelledPoseRef.current = true; clearSpellTimers(); }, [clearSpellTimers]);
 
   // Cache context once
   useEffect(() => {
@@ -213,6 +346,23 @@ export default function ASLWordStickman() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "14px" }}>
+      {/* sign.mt skeleton viewer — always mounted so its loaded pose survives
+          tab/word switches; hidden when a fallback word needs the canvas. */}
+      <pose-viewer
+        ref={poseElRef}
+        thickness={6}
+        style={{
+          display: poseMode ? "block" : "none",
+          width: "100%",
+          maxWidth: `${W}px`,
+          height: "420px",
+          borderRadius: "16px",
+          background: "rgba(15, 23, 42, 0.7)",
+          border: "1px solid var(--btn-secondary-border)",
+        }}
+      />
+      {/* Canvas stays mounted (hidden in pose mode) so its 2D context and
+          idle drawing survive switching between pose and fallback words. */}
       <canvas
         ref={canvasRef}
         width={W}
@@ -221,14 +371,14 @@ export default function ASLWordStickman() {
           borderRadius: "16px",
           background: "rgba(15, 23, 42, 0.7)",
           border: "1px solid var(--btn-secondary-border)",
-          display: "block",
+          display: poseMode ? "none" : "block",
           maxWidth: "100%",
         }}
       />
 
       {/* Category tabs */}
-      <div style={{ display: "flex", gap: "6px", maxWidth: `${W}px`, justifyContent: "center" }}>
-        {WORD_CATEGORIES.map((c) => (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", maxWidth: `${W + 60}px`, justifyContent: "center" }}>
+        {TABS.map((c) => (
           <button
             key={c.id}
             type="button"
@@ -254,27 +404,68 @@ export default function ASLWordStickman() {
         ))}
       </div>
 
-      {/* Word picker */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", maxWidth: `${W}px`, justifyContent: "center" }}>
-        {wordsInCategory.map((w) => (
-          <button
-            key={w}
-            type="button"
-            disabled={isPlaying}
-            onClick={() => setSelected(w)}
-            style={{
-              width: "auto", padding: "5px 11px", fontSize: "0.76rem",
-              cursor: isPlaying ? "not-allowed" : "pointer",
-              background: selected === w ? "var(--stickman-btn-active-bg)" : "var(--stickman-btn-inactive-bg)",
-              border: `1px solid ${selected === w ? "var(--primary)" : "var(--stickman-btn-inactive-border)"}`,
-              borderRadius: "8px",
-              color: selected === w ? "var(--stickman-btn-active-color)" : "var(--stickman-btn-inactive-color)",
-            }}
-          >
-            {w}
-          </button>
-        ))}
-      </div>
+      {/* Word picker — or, on the Fingerspelling tab, a word input + A–Z grid */}
+      {isFingerspell ? (
+        <>
+          <div style={{ display: "flex", gap: "8px", width: "100%", maxWidth: `${W}px` }}>
+            <input
+              type="text"
+              value={spellInput}
+              disabled={isPlaying}
+              onChange={(e) => setSpellInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !isPlaying) spellCurrentInput(); }}
+              placeholder="Type a word to fingerspell…"
+              style={{
+                flex: 1, padding: "8px 12px", fontSize: "0.85rem",
+                borderRadius: "8px", border: "1px solid var(--btn-secondary-border)",
+                background: "var(--stickman-btn-inactive-bg)",
+                color: "var(--stickman-btn-inactive-color)",
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", maxWidth: `${W}px`, justifyContent: "center" }}>
+            {ALPHABET.map((L) => (
+              <button
+                key={L}
+                type="button"
+                disabled={isPlaying}
+                onClick={() => playLetter(L)}
+                style={{
+                  width: "32px", padding: "5px 0", fontSize: "0.76rem",
+                  cursor: isPlaying ? "not-allowed" : "pointer",
+                  background: lastLetter === L ? "var(--stickman-btn-active-bg)" : "var(--stickman-btn-inactive-bg)",
+                  border: `1px solid ${lastLetter === L ? "var(--primary)" : "var(--stickman-btn-inactive-border)"}`,
+                  borderRadius: "8px",
+                  color: lastLetter === L ? "var(--stickman-btn-active-color)" : "var(--stickman-btn-inactive-color)",
+                }}
+              >
+                {L}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", maxWidth: `${W}px`, justifyContent: "center" }}>
+          {wordsInCategory.map((w) => (
+            <button
+              key={w}
+              type="button"
+              disabled={isPlaying}
+              onClick={() => setSelected(w)}
+              style={{
+                width: "auto", padding: "5px 11px", fontSize: "0.76rem",
+                cursor: isPlaying ? "not-allowed" : "pointer",
+                background: selected === w ? "var(--stickman-btn-active-bg)" : "var(--stickman-btn-inactive-bg)",
+                border: `1px solid ${selected === w ? "var(--primary)" : "var(--stickman-btn-inactive-border)"}`,
+                borderRadius: "8px",
+                color: selected === w ? "var(--stickman-btn-active-color)" : "var(--stickman-btn-inactive-color)",
+              }}
+            >
+              {w}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Controls */}
       <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
@@ -297,7 +488,16 @@ export default function ASLWordStickman() {
         </div>
         <button
           type="button"
-          onClick={isPlaying ? stopAnim : () => playWord(selected, SPEED_MULT[speed])}
+          disabled={isFingerspell && !isPlaying && spellInput.replace(/[^a-zA-Z]/g, "") === ""}
+          onClick={
+            isPlaying
+              ? (poseMode ? stopPose : stopAnim)
+              : isFingerspell
+                ? spellCurrentInput
+                : poseMode
+                  ? () => playPoseSequence([poseUrl(selected)], rate)
+                  : () => playWord(selected, SPEED_MULT[speed])
+          }
           style={{
             width: "auto", padding: "9px 28px", fontSize: "0.92rem", borderRadius: "9px", cursor: "pointer",
             background: isPlaying ? "var(--danger)" : "var(--primary)",
@@ -308,10 +508,29 @@ export default function ASLWordStickman() {
         </button>
       </div>
 
-      {WORD_ANIMS[selected] && (
+      {isFingerspell ? (
+        <p style={{ color: "var(--stickman-label-color)", margin: 0, fontSize: "0.8rem", textAlign: "center" }}>
+          {lastLetter && ASL_HINTS[lastLetter] ? (
+            <>
+              <span style={{ color: "var(--secondary)", fontWeight: 600 }}>{lastLetter}</span>
+              {" — "}{ASL_HINTS[lastLetter]}
+            </>
+          ) : (
+            "Type a word and press Play to spell it letter by letter, or tap a letter to watch its handshape."
+          )}
+          <span style={{ display: "block", marginTop: "2px", fontSize: "0.72rem", opacity: 0.75 }}>
+            🎥 Motion captured from a real signer · skeleton data via sign.mt
+          </span>
+        </p>
+      ) : WORD_ANIMS[selected] && (
         <p style={{ color: "var(--stickman-label-color)", margin: 0, fontSize: "0.8rem", textAlign: "center" }}>
           <span style={{ color: "var(--secondary)", fontWeight: 600 }}>{selected}</span>
           {" — "}{WORD_ANIMS[selected].description}
+          {poseMode && (
+            <span style={{ display: "block", marginTop: "2px", fontSize: "0.72rem", opacity: 0.75 }}>
+              🎥 Motion captured from a real signer · skeleton data via sign.mt
+            </span>
+          )}
         </p>
       )}
     </div>
