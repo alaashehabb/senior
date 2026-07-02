@@ -155,3 +155,131 @@ def _serialize(pose: Pose) -> bytes:
     buf = io.BytesIO()
     pose.write(buf)
     return buf.getvalue()
+
+
+# ── Free-text → signed sequence ──────────────────────────────────────────────
+# Tokenizes a typed sentence; tokens with a dictionary .pose are SIGNED,
+# unknown tokens are FINGERSPELLED letter by letter (sign.mt's behaviour).
+# Everything is stitched into one continuous pose with per-token / per-letter
+# timings so the UI can highlight what's currently playing.
+
+TOKEN_PAD_S = 0.30    # transition gap between tokens (word boundary pause)
+LETTER_PAD_S = 0.20   # gap between letters inside a fingerspelled token
+DIGIT_WORDS = {"1": "one", "2": "two", "3": "three", "4": "four", "5": "five"}
+MAX_TOKENS = 12
+MAX_SEGMENTS = 80
+
+
+def _tokenize(text: str) -> list[str]:
+    cleaned = "".join(c if (c.isalnum() or c in "' ") else " " for c in text.lower())
+    return [t.strip("'") for t in cleaned.split() if t.strip("'")]
+
+
+def _concat_with_pads(poses: list[Pose], pad_frames: list[int], fps: float) -> Pose:
+    """Like the library's concatenate, but with a per-boundary padding length."""
+    from pose_format.numpy import NumPyPoseBody
+
+    datas, confs = [], []
+    for i, p in enumerate(poses):
+        datas.append(p.body.data)
+        confs.append(p.body.confidence)
+        if i < len(poses) - 1 and pad_frames[i] > 0:
+            _, people, points, dims = p.body.data.shape
+            datas.append(np.zeros((pad_frames[i], people, points, dims)))
+            confs.append(np.zeros((pad_frames[i], people, points)))
+    body = NumPyPoseBody(fps=fps, data=np.ma.concatenate(datas), confidence=np.concatenate(confs))
+    body = body.interpolate(kind="linear")
+    return Pose(header=poses[0].header, body=body)
+
+
+@lru_cache(maxsize=128)
+def build_text_sequence(text: str) -> tuple[bytes, tuple]:
+    """
+    Returns (pose_file_bytes, tokens_meta) where tokens_meta is a tuple of
+    dict-like tuples: (token, mode, start_ms, duration_ms, letters) with
+    letters = ((ch, start_ms, duration_ms), ...) for fingerspelled tokens.
+    """
+    tokens = _tokenize(text)
+    if not tokens:
+        raise ValueError("No signable words in text")
+    if len(tokens) > MAX_TOKENS:
+        raise ValueError(f"Too many words (max {MAX_TOKENS})")
+
+    # plan: one entry per token → ("sign", name) or ("spell", [letters])
+    plan = []
+    for tok in tokens:
+        tok = DIGIT_WORDS.get(tok, tok)
+        if _pose_file(tok).exists():
+            plan.append(("sign", tok))
+        else:
+            letters = [c for c in tok if "a" <= c <= "z"] or [
+                DIGIT_WORDS[c] for c in tok if c in DIGIT_WORDS
+            ]
+            if not letters:
+                continue
+            plan.append(("spell", letters))
+    if not plan:
+        raise ValueError("No signable words in text")
+    if sum(len(p[1]) if p[0] == "spell" else 1 for p in plan) > MAX_SEGMENTS:
+        raise ValueError("Sentence too long to fingerspell — shorten it")
+
+    # Prepare every segment pose. Words keep their natural (trimmed) motion;
+    # letters are reduced to a held peak handshape, like fingerspelling mode.
+    segments = []  # (token_idx, letter_or_None, Pose)
+    for t_idx, (mode, payload) in enumerate(plan):
+        if mode == "sign":
+            pose = normalize_pose(reduce_holistic(_load(payload)))
+            trim_pose(pose, t_idx > 0, t_idx < len(plan) - 1)
+            segments.append((t_idx, None, pose))
+        else:
+            for ch in payload:
+                pose = normalize_pose(reduce_holistic(_load(ch)))
+                trim_pose(pose, True, True)
+                _central_peak(pose, SPELL_PEAK_S)
+                segments.append((t_idx, ch, pose))
+
+    fps = segments[0][2].body.fps
+    for t_idx, ch, pose in segments:
+        if ch is not None:
+            _freeze_tail(pose, SPELL_HOLD_S, fps)
+
+    # Per-boundary padding: short inside a fingerspelled word, longer between
+    # tokens so word boundaries read clearly.
+    pad_frames = []
+    for (a_tok, _, _), (b_tok, _, _) in zip(segments, segments[1:]):
+        gap = LETTER_PAD_S if a_tok == b_tok else TOKEN_PAD_S
+        pad_frames.append(int(round(gap * fps)))
+
+    poses = [s[2] for s in segments]
+    if len(poses) == 1:
+        stitched = poses[0]
+    else:
+        stitched = _concat_with_pads(poses, pad_frames, fps)
+        stitched = pose_savgol_filter(stitched)
+    correct_wrists(stitched)
+    normalize_pose_size(stitched)
+
+    # Timing metadata on the final timeline.
+    tokens_meta = []
+    frame_at = 0
+    for s_idx, (t_idx, ch, pose) in enumerate(segments):
+        frames = len(pose.body.data) + (pad_frames[s_idx] if s_idx < len(pad_frames) else 0)
+        start_ms = round(frame_at / fps * 1000)
+        dur_ms = round(frames / fps * 1000)
+        mode, payload = plan[t_idx]
+        if not tokens_meta or tokens_meta[-1]["index"] != t_idx:
+            text_label = payload if mode == "sign" else "".join(payload)
+            tokens_meta.append({
+                "index": t_idx, "text": text_label, "mode": mode,
+                "start_ms": start_ms, "duration_ms": 0, "letters": [],
+            })
+        tokens_meta[-1]["duration_ms"] += dur_ms
+        if ch is not None:
+            tokens_meta[-1]["letters"].append({"ch": ch, "start_ms": start_ms, "duration_ms": dur_ms})
+        frame_at += frames
+
+    return _serialize(stitched), tuple(
+        (m["text"], m["mode"], m["start_ms"], m["duration_ms"],
+         tuple((l["ch"], l["start_ms"], l["duration_ms"]) for l in m["letters"]))
+        for m in tokens_meta
+    )

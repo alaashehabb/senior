@@ -84,7 +84,7 @@ export default function ASLWordStickman() {
 
   const [selected, setSelected] = useState("HELLO");
   const [isPlaying, setIsPlaying] = useState(false);
-  const [speed, setSpeed] = useState("slow");
+  const [speed, setSpeed] = useState("normal");
   const [category, setCategory] = useState(WORD_CATEGORIES[0].id);
   const [spellInput, setSpellInput] = useState("");
   const [lastLetter, setLastLetter] = useState(null);

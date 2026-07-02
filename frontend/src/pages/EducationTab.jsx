@@ -66,7 +66,7 @@ function EducationTab() {
           <p className="edu-col-sub">
             {wordView === "single"
               ? "Pick a word — or open 🔤 Fingerspelling to spell anything — and watch the sign. Use 🐢 Slow to study the motion, then ⚡ Normal for natural speed."
-              : "Add several words to a sentence, then play them back-to-back — great for practicing short phrases."}
+              : "Type any sentence and watch it signed: dictionary words are signed naturally, unknown words are fingerspelled letter by letter."}
           </p>
           {wordView === "single" ? <ASLWordStickman /> : <SentenceBuilder />}
         </div>

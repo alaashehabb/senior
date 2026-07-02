@@ -163,6 +163,50 @@ def get_pose_seq_meta(items: str, mode: str = "words"):
     return {"items": list(names), "durations_ms": list(durations), "total_ms": sum(durations)}
 
 
+def _pose_text_meta(text: str) -> dict:
+    from pose_concat import build_text_sequence
+    _, meta = build_text_sequence(text.strip().lower())
+    return {
+        "tokens": [
+            {
+                "text": t, "mode": mode, "start_ms": start, "duration_ms": dur,
+                "letters": [{"ch": ch, "start_ms": ls, "duration_ms": ld} for ch, ls, ld in letters],
+            }
+            for t, mode, start, dur, letters in meta
+        ],
+        "total_ms": meta[-1][2] + meta[-1][3] if meta else 0,
+    }
+
+
+@app.get("/api/pose-text")
+def get_pose_text(text: str):
+    """
+    Sign a whole typed sentence as ONE stitched pose: words with a dictionary
+    .pose are signed, unknown words are fingerspelled letter by letter
+    (sign.mt's behaviour for out-of-vocabulary words).
+    """
+    try:
+        from pose_concat import build_text_sequence
+        data, _ = build_text_sequence(text.strip().lower())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return Response(content=data, media_type="application/octet-stream",
+                    headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/api/pose-text/meta")
+def get_pose_text_meta(text: str):
+    """Token/letter timings for the stitched sentence, for UI highlighting."""
+    try:
+        return _pose_text_meta(text)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
 def _pose_path(word: str) -> Path:
     slug = word.lower().replace(" ", "_").replace("%20", "_")
     return POSES_DIR / f"{slug}.pose"
