@@ -81,11 +81,21 @@ export default function SentenceBuilder() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playingIdx, setPlayingIdx] = useState(-1);
   const [speed, setSpeed] = useState("slow");
-  // Which surface is showing: the sign.mt skeleton (words with a .pose file)
-  // or the legacy canvas (everything else). Switches per word mid-sentence.
-  const [activeView, setActiveView] = useState("canvas");
+  // Which surface is showing: the sign.mt skeleton (default — also the idle
+  // view) or the legacy canvas, which only appears while a word WITHOUT a
+  // .pose file is actively playing.
+  const [activeView, setActiveView] = useState("pose");
 
   const poseWords = usePoseWords();
+
+  // While idle, preview the sentence's first word on the skeleton viewer.
+  useEffect(() => {
+    const el = poseElRef.current;
+    if (!el || isPlaying) return;
+    if (sentence.length > 0 && hasPose(poseWords, sentence[0])) {
+      el.src = poseUrl(sentence[0]);
+    }
+  }, [sentence, poseWords, isPlaying]);
 
   const wordsInCategory = Object.keys(WORD_ANIMS).filter(
     (w) => WORD_ANIMS[w].category === category
@@ -122,7 +132,7 @@ export default function SentenceBuilder() {
   const playOneWord = useCallback((wordKey, mult) => {
     return new Promise((resolve) => {
       const anim = WORD_ANIMS[wordKey];
-      if (!anim) return resolve();
+      if (!anim?.frames) return resolve(); // pose-only entries have no canvas keyframes
       const frames = anim.frames;
 
       let fIdx = 0;
@@ -256,7 +266,7 @@ export default function SentenceBuilder() {
         clearChipTimers();
         setPlayingIdx(-1);
         setIsPlaying(false);
-        setActiveView("canvas");
+        setActiveView("pose");
         return;
       } catch {
         clearChipTimers(); // stitch endpoint unreachable — per-word fallback
@@ -275,7 +285,7 @@ export default function SentenceBuilder() {
 
     setPlayingIdx(-1);
     setIsPlaying(false);
-    setActiveView("canvas");
+    setActiveView("pose");
   }, [sentence, speed, playOneWord, playPoseSrc, poseWords, clearChipTimers]);
 
   const stopSentence = useCallback(() => {
@@ -285,7 +295,7 @@ export default function SentenceBuilder() {
     poseElRef.current?.pause();
     setIsPlaying(false);
     setPlayingIdx(-1);
-    setActiveView("canvas");
+    setActiveView("pose");
   }, [clearChipTimers]);
 
   useEffect(() => {
@@ -317,33 +327,45 @@ export default function SentenceBuilder() {
       {/* Both surfaces stay mounted; per-word playback toggles which shows so
           the pose viewer keeps its loaded file and the canvas keeps its 2D
           context across the sentence. */}
-      <pose-viewer
-        ref={poseElRef}
-        loop={false}
-        autoplay={false}
-        thickness={6}
-        style={{
-          borderRadius: "16px",
-          background: "rgba(15, 23, 42, 0.7)",
-          border: "1px solid var(--btn-secondary-border)",
-          display: activeView === "pose" ? "block" : "none",
-          width: "100%",
-          maxWidth: `${W}px`,
-          height: "420px",
-        }}
-      />
-      <canvas
-        ref={canvasRef}
-        width={W}
-        height={H}
-        style={{
-          borderRadius: "16px",
-          background: "rgba(15, 23, 42, 0.7)",
-          border: "1px solid var(--btn-secondary-border)",
-          display: activeView === "pose" ? "none" : "block",
-          maxWidth: "100%",
-        }}
-      />
+      <div style={{ position: "relative", width: "100%", maxWidth: `${W}px` }}>
+        <pose-viewer
+          ref={poseElRef}
+          loop={false}
+          autoplay={false}
+          thickness={6}
+          style={{
+            borderRadius: "16px",
+            background: "rgba(15, 23, 42, 0.7)",
+            border: "1px solid var(--btn-secondary-border)",
+            display: activeView === "pose" ? "block" : "none",
+            width: "100%",
+            height: "420px",
+          }}
+        />
+        <canvas
+          ref={canvasRef}
+          width={W}
+          height={H}
+          style={{
+            borderRadius: "16px",
+            background: "rgba(15, 23, 42, 0.7)",
+            border: "1px solid var(--btn-secondary-border)",
+            display: activeView === "pose" ? "none" : "block",
+            maxWidth: "100%",
+          }}
+        />
+        {activeView === "pose" && !isPlaying && (
+          <span
+            style={{
+              position: "absolute", bottom: "12px", left: 0, right: 0,
+              textAlign: "center", fontSize: "13px", pointerEvents: "none",
+              color: "rgba(255,255,255,0.30)",
+            }}
+          >
+            {sentence.length ? "▶ Press Play to sign the sentence" : "Add words below to build a sentence"}
+          </span>
+        )}
+      </div>
 
       {/* Sentence chips */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", maxWidth: `${W}px`, justifyContent: "center", minHeight: "28px" }}>

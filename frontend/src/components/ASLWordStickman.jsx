@@ -237,7 +237,7 @@ export default function ASLWordStickman() {
   const playWord = useCallback((wordKey, mult) => {
     cancelAnimationFrame(rafRef.current);
     const anim = WORD_ANIMS[wordKey];
-    if (!anim) return;
+    if (!anim?.frames) return; // pose-only entries have no canvas keyframes
     setIsPlaying(true);
 
     const frames = anim.frames;

@@ -22,6 +22,7 @@ export const LN = [85,  250]; // left  wrist neutral
 
 export const WORD_CATEGORIES = [
   { id: "core", label: "Everyday Words" },
+  { id: "grammar", label: "Connecting Words" },
   { id: "people", label: "People" },
   { id: "feelings", label: "Feelings" },
   { id: "questions", label: "Questions" },
@@ -577,6 +578,34 @@ export const WORD_ANIMS = {
         dur: 620, hold: 850, ease: "easeInOut" },
       { rWrist: RN, rHand: null, dur: 640, ease: "easeIn" },
     ],
+  },
+
+  // ── Connecting words (pose-only: no canvas keyframes — these exist purely
+  //    as sign.mt .pose files, so `frames` is omitted; the canvas fallback
+  //    skips entries without frames) ─────────────────────────────────────────
+  AND: {
+    category: "grammar",
+    description: "Open hand sweeps to the side, fingers closing together",
+  },
+  IS: {
+    category: "grammar",
+    description: "Pinky hand at the chin moves forward",
+  },
+  HAS: {
+    category: "grammar",
+    description: "Bent-hand fingertips draw in to the chest",
+  },
+  WAS: {
+    category: "grammar",
+    description: "Hand near the cheek rolls back toward the shoulder (past tense)",
+  },
+  WERE: {
+    category: "grammar",
+    description: "Like WAS — the hand rolls back toward the shoulder (past tense)",
+  },
+  HOW: {
+    category: "grammar",
+    description: "Curved hands, knuckles together, roll forward",
   },
 
   // ── Numbers (citation form: raise, hold, lower — no motion needed) ──────────

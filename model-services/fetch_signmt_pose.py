@@ -40,6 +40,7 @@ EDUCATION_WORDS = [
     "happy", "sad", "cry",
     "where", "what",
     "now", "tomorrow",
+    "and", "is", "has", "was", "were", "how",
     "one", "two", "three", "four", "five",
     # fingerspelling alphabet (per-letter clips used by the Fingerspelling tab)
     *"abcdefghijklmnopqrstuvwxyz",

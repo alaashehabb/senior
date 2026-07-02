@@ -37,6 +37,6 @@ export function lowConfidenceMessage(prediction, target) {
 // word is watch-only: the model would never recognize it correctly, so
 // Practice Mode must not offer a check it can't actually pass.
 export const PRACTICE_READY_WORDS = [
-  "DRINK", "EAT", "FINISH", "GO", "HELP", "MOTHER",
+  "DRINK", "EAT", "FINISH", "GO", "HELP", "HOW", "MOTHER",
   "NO", "NOW", "WANT", "WHAT", "YES",
 ];
