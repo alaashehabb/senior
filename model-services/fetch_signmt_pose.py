@@ -73,8 +73,11 @@ EDUCATION_WORDS_AR = [
     "حب", "خائف", "جميل", "حلو", "جديد",
     "اليوم", "أمس", "الآن", "دقيقة",
     "خبز", "حليب",
+    # Numbers (Sentence Builder digits only — no UI category; 1 and 5 are
+    # ABSENT from jos, all variants spell or 500):
     "ثلاثة",
     # "اربعة" needs the "أربعة" spelling variant — see poses/ar/اربعة.pose
+    # "اثنان" needs the "الاثنان" variant — saved as poses/ar/اثنان.pose
     # fingerspelling alphabet (28 base letters)
     *"ابتثجحخدذرزسشصضطظعغفقكلمنهوي",
 ]

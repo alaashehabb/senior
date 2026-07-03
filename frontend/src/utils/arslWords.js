@@ -28,7 +28,6 @@ export const AR_WORD_CATEGORIES = [
   { id: "feelings", label: "مشاعر وصفات" },
   { id: "time", label: "الوقت" },
   { id: "food", label: "طعام وشراب" },
-  { id: "numbers", label: "أرقام" },
 ];
 
 export const AR_WORDS = {
@@ -59,10 +58,12 @@ export const AR_WORDS = {
 
   "خبز": { category: "food", description: "Bread" },
   "حليب": { category: "food", description: "Milk" },
-
-  "ثلاثة": { category: "numbers", description: "Three (3)" },
-  "اربعة": { category: "numbers", description: "Four (4)" },
 };
+
+// No numbers category: the jos dictionary only has 2/3/4 (1 and 5 are
+// absent — every spelling variant spells or 500s), too sparse for a tab.
+// The اثنان/ثلاثة/اربعة pose files stay installed so the Sentence Builder
+// still signs typed digits (٢ ٣ ٤) via the server's DIGIT_WORDS mapping.
 
 // 28 base letters, in alphabetical order, for the Fingerspelling tab.
 export const AR_ALPHABET = "ا ب ت ث ج ح خ د ذ ر ز س ش ص ض ط ظ ع غ ف ق ك ل م ن ه و ي".split(" ");
