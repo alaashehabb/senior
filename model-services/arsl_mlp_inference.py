@@ -23,8 +23,8 @@ CLASS_LABELS = [
 ]
 
 ARABIC_MAP = {
-    "ain": "ع", "al": "ال", "aleff": "ا", "bb": "ب", "dal": "د",
-    "dha": "ذ", "dhad": "ض", "fa": "ف", "gaaf": "ق", "ghain": "غ",
+    "ain": "ع", "al": "ال", "aleff": "أ", "bb": "ب", "dal": "د",
+    "dha": "ظ", "dhad": "ض", "fa": "ف", "gaaf": "ق", "ghain": "غ",
     "ha": "ه", "haa": "ح", "jeem": "ج", "kaaf": "ك", "khaa": "خ",
     "la": "لا", "laam": "ل", "meem": "م", "nun": "ن", "ra": "ر",
     "saad": "ص", "seen": "س", "sheen": "ش", "ta": "ة", "taa": "ت",
@@ -40,10 +40,24 @@ _model = None
 _hands = None
 
 
+def normalize_bbox(landmarks_array: np.ndarray) -> np.ndarray:
+    xs, ys, zs = landmarks_array[:, 0], landmarks_array[:, 1], landmarks_array[:, 2]
+    x_min, x_max = np.min(xs), np.max(xs)
+    y_min, y_max = np.min(ys), np.max(ys)
+    x_range, y_range = max(x_max - x_min, 1e-6), max(y_max - y_min, 1e-6)
+    
+    normalized = np.zeros_like(landmarks_array)
+    normalized[:, 0] = (xs - x_min) / x_range
+    normalized[:, 1] = (ys - y_min) / y_range
+    normalized[:, 2] = zs / x_range
+    return normalized
+
 def landmarks_list_to_features(landmarks: list[float]) -> np.ndarray | None:
     arr = np.asarray(landmarks, dtype=np.float32)
     if arr.size == 63:
-        return arr.reshape(1, -1)
+        arr_reshaped = arr.reshape(21, 3)
+        arr_norm = normalize_bbox(arr_reshaped)
+        return arr_norm.reshape(1, -1)
     return None
 
 
@@ -74,7 +88,9 @@ def _features_from_image(image_bgr: np.ndarray) -> np.ndarray | None:
         return None
 
     lm = results.multi_hand_landmarks[0].landmark
-    return np.array([[p.x, p.y, p.z] for p in lm], dtype=np.float32).reshape(1, -1)
+    arr_reshaped = np.array([[p.x, p.y, p.z] for p in lm], dtype=np.float32)
+    arr_norm = normalize_bbox(arr_reshaped)
+    return arr_norm.reshape(1, -1)
 
 
 def decode_image_base64(image_base64: str) -> np.ndarray:

@@ -24,3 +24,7 @@ __pycache__/
 # Build/cache
 .cache/
 coverage/
+
+# Databases
+*.db
+*.db-journal

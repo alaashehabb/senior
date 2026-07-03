@@ -60,7 +60,12 @@ function registerChatHandlers(io, socket) {
         return ack?.({ ok: false, message: "You are not a member of this room" });
       }
 
+      if (socket.currentRoomId && socket.currentRoomId !== resolvedRoomId) {
+        socket.leave(socket.currentRoomId);
+      }
+      socket.currentRoomId = resolvedRoomId;
       socket.join(resolvedRoomId);
+
       const recentMessages = await prisma.message.findMany({
         where: { roomId: resolvedRoomId },
         orderBy: { createdAt: "asc" },
