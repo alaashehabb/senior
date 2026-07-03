@@ -12,8 +12,17 @@ export function isLetterMatch(predictedText, targetLetter, language = "en") {
   return predictedText.trim().toUpperCase() === String(targetLetter).trim().toUpperCase();
 }
 
-export function isWordMatch(predictedText, targetWord) {
+// Mirrors the pose-lookup fold in poseViewer.js: the ArSL word model's
+// labels use bare spellings (انا, اسف) while the education vocabulary keeps
+// proper orthography (أنا, آسف) — fold both sides before comparing.
+const AR_FOLD_RE = /[أإآٱىئؤةء]/g;
+const AR_FOLD = { "أ": "ا", "إ": "ا", "آ": "ا", "ٱ": "ا",
+                  "ى": "ي", "ئ": "ي", "ؤ": "و", "ة": "ه", "ء": "" };
+const foldAr = (s) => String(s).replace(AR_FOLD_RE, (c) => AR_FOLD[c]);
+
+export function isWordMatch(predictedText, targetWord, language = "en") {
   if (!predictedText) return false;
+  if (language === "ar") return foldAr(predictedText.trim()) === foldAr(String(targetWord).trim());
   return predictedText.trim().toUpperCase() === String(targetWord).trim().toUpperCase();
 }
 

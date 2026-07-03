@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ASL_HINTS } from "../../utils/aslHandPoses";
+import { AR_ALPHABET, AR_PRACTICE_READY_WORDS } from "../../utils/arslWords";
 import { useCamera } from "../../utils/useCamera";
 import { isLetterMatch, isWordMatch, lowConfidenceMessage, PRACTICE_READY_WORDS } from "../../utils/practiceMatch";
 import api from "../../services/api";
@@ -11,16 +12,31 @@ import api from "../../services/api";
 // than sharing state with the Chatting tab, so starting/stopping the camera
 // here never affects (or is affected by) the Chatting tab's session.
 
-const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const WORD_RECORD_MS = 3200; // longer than Chatting's 2.5s: cued performance needs reaction time
 const COUNTDOWN_STEPS = [3, 2, 1];
+
+// Letter targets and recognizable words per language. Both letter models
+// return exactly what we compare against: uppercase English letters ("A")
+// or real Arabic glyphs ("ع") — see practiceMatch.isLetterMatch.
+const LANG_CONFIG = {
+  en: {
+    alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),
+    practiceWords: PRACTICE_READY_WORDS,
+    dir: "ltr",
+  },
+  ar: {
+    alphabet: AR_ALPHABET,
+    practiceWords: AR_PRACTICE_READY_WORDS,
+    dir: "rtl",
+  },
+};
 
 function randomFrom(list, exclude) {
   const pool = exclude ? list.filter((x) => x !== exclude) : list;
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-export default function PracticePanel() {
+export default function PracticePanel({ lang = "en" }) {
   const {
     videoRef,
     cameraOn,
@@ -31,9 +47,10 @@ export default function PracticePanel() {
     recordVideoBase64,
   } = useCamera();
 
+  const cfg = LANG_CONFIG[lang];
   const [mode, setMode] = useState("letters"); // "letters" | "words"
-  const [targetLetter, setTargetLetter] = useState("A");
-  const [targetWord, setTargetWord] = useState(PRACTICE_READY_WORDS[0]);
+  const [targetLetter, setTargetLetter] = useState(cfg.alphabet[0]);
+  const [targetWord, setTargetWord] = useState(cfg.practiceWords[0]);
   const [checking, setChecking] = useState(false);
   const [countdown, setCountdown] = useState(null);
   const [result, setResult] = useState(null); // { ok, confidence, predicted, message }
@@ -46,9 +63,9 @@ export default function PracticePanel() {
   const nextTarget = () => {
     setResult(null);
     if (mode === "letters") {
-      setTargetLetter((cur) => randomFrom(ALPHABET, cur));
+      setTargetLetter((cur) => randomFrom(cfg.alphabet, cur));
     } else {
-      setTargetWord((cur) => randomFrom(PRACTICE_READY_WORDS, cur));
+      setTargetWord((cur) => randomFrom(cfg.practiceWords, cur));
     }
   };
 
@@ -65,7 +82,7 @@ export default function PracticePanel() {
     setChecking(true);
     setResult(null);
     try {
-      const res = await api.post("/predict", { language: "en", mode: "letters", imageBase64 });
+      const res = await api.post("/predict", { language: lang, mode: "letters", imageBase64 });
       const prediction = res.data?.prediction;
       if (!prediction) {
         // The model service reports hard failures as a bare `message` with
@@ -84,7 +101,7 @@ export default function PracticePanel() {
         return;
       }
       setResult({
-        ok: isLetterMatch(prediction.text, targetLetter, "en"),
+        ok: isLetterMatch(prediction.text, targetLetter, lang),
         confidence: prediction.confidence,
         predicted: prediction.text,
       });
@@ -116,7 +133,7 @@ export default function PracticePanel() {
         setResult({ ok: false, message: "Couldn't record — try again." });
         return;
       }
-      const res = await api.post("/predict", { language: "en", mode: "words", videoBase64 });
+      const res = await api.post("/predict", { language: lang, mode: "words", videoBase64 });
       const prediction = res.data?.prediction;
       if (!prediction) {
         setResult({ ok: false, message: res.data?.message || "Check failed — try again." });
@@ -133,7 +150,7 @@ export default function PracticePanel() {
         return;
       }
       setResult({
-        ok: isWordMatch(prediction.text, targetWord),
+        ok: isWordMatch(prediction.text, targetWord, lang),
         confidence: prediction.confidence,
         predicted: prediction.text,
       });
@@ -167,8 +184,9 @@ export default function PracticePanel() {
 
       {mode === "words" && (
         <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--text-muted)" }}>
-          Word-sign checking currently supports {PRACTICE_READY_WORDS.length} words
-          (the ones the recognition model was trained on): {PRACTICE_READY_WORDS.join(", ")}.
+          Word-sign checking currently supports {cfg.practiceWords.length} words
+          (the ones the recognition model was trained on):{" "}
+          <span dir={cfg.dir}>{cfg.practiceWords.join("، ")}</span>.
           More words will support practice-checking as the model's vocabulary grows.
         </p>
       )}
@@ -186,9 +204,9 @@ export default function PracticePanel() {
             Sign this
           </div>
           <div style={{ fontSize: "2rem", fontWeight: 700, color: "var(--secondary)", lineHeight: 1.1 }}>
-            {target}
+            <span dir={cfg.dir}>{target}</span>
           </div>
-          {mode === "letters" && ASL_HINTS[target] && (
+          {mode === "letters" && lang === "en" && ASL_HINTS[target] && (
             <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>{ASL_HINTS[target]}</div>
           )}
         </div>

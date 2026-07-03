@@ -48,18 +48,25 @@ from spoken_to_signed.gloss_to_pose.smoothing import (
 )
 
 POSES_DIR = Path(__file__).parent / "poses"
+LANG_DIRS = {"en": POSES_DIR, "ar": POSES_DIR / "ar"}
 PADDING_S = 0.20     # interpolated transition gap between signs (sign.mt default)
 SPELL_PEAK_S = 0.20  # how much of a letter's central held shape to keep
 SPELL_HOLD_S = 0.35  # extra freeze on each letter so learners can read it
 
+AR_LETTERS = set("ابتثجحخدذرزسشصضطظعغفقكلمنهوي")
+# Orthographic variants folded onto the base letters we have poses for.
+AR_FOLD = str.maketrans({"أ": "ا", "إ": "ا", "آ": "ا", "ٱ": "ا",
+                         "ى": "ي", "ئ": "ي", "ؤ": "و", "ة": "ه", "ء": ""})
+AR_DIACRITICS = set("ًٌٍَُِّْـ")
 
-def _pose_file(name: str) -> Path:
+
+def _pose_file(name: str, lang: str = "en") -> Path:
     slug = name.lower().strip().replace(" ", "_")
-    return POSES_DIR / f"{slug}.pose"
+    return LANG_DIRS[lang] / f"{slug}.pose"
 
 
-def _load(name: str) -> Pose:
-    path = _pose_file(name)
+def _load(name: str, lang: str = "en") -> Pose:
+    path = _pose_file(name, lang)
     if not path.exists():
         raise FileNotFoundError(f"No pose file for '{name}'")
     with open(path, "rb") as f:
@@ -87,12 +94,12 @@ def _central_peak(pose: Pose, seconds: float) -> None:
 
 
 @lru_cache(maxsize=128)
-def build_sequence(names: tuple[str, ...], mode: str = "words") -> tuple[bytes, tuple[int, ...]]:
+def build_sequence(names: tuple[str, ...], mode: str = "words", lang: str = "en") -> tuple[bytes, tuple[int, ...]]:
     """Returns (pose_file_bytes, per_segment_duration_ms on the final timeline)."""
     if not names:
         raise ValueError("names must be non-empty")
 
-    poses = [_load(n) for n in names]
+    poses = [_load(n, lang) for n in names]
     poses = [reduce_holistic(p) for p in poses]
     poses = [normalize_pose(p) for p in poses]
 
@@ -165,14 +172,54 @@ def _serialize(pose: Pose) -> bytes:
 
 TOKEN_PAD_S = 0.30    # transition gap between tokens (word boundary pause)
 LETTER_PAD_S = 0.20   # gap between letters inside a fingerspelled token
-DIGIT_WORDS = {"1": "one", "2": "two", "3": "three", "4": "four", "5": "five"}
+DIGIT_WORDS = {
+    "en": {"1": "one", "2": "two", "3": "three", "4": "four", "5": "five"},
+    "ar": {"1": "واحد", "2": "اثنان", "3": "ثلاثة", "4": "اربعة", "5": "خمسة",
+           "١": "واحد", "٢": "اثنان", "٣": "ثلاثة", "٤": "اربعة", "٥": "خمسة"},
+}
+SPELL_LETTERS = {
+    "en": set("abcdefghijklmnopqrstuvwxyz"),
+    "ar": AR_LETTERS,
+}
 MAX_TOKENS = 12
 MAX_SEGMENTS = 80
 
 
-def _tokenize(text: str) -> list[str]:
-    cleaned = "".join(c if (c.isalnum() or c in "' ") else " " for c in text.lower())
+def _tokenize(text: str, lang: str = "en") -> list[str]:
+    text = text.lower()
+    if lang == "ar":
+        text = "".join(c for c in text if c not in AR_DIACRITICS)
+    cleaned = "".join(c if (c.isalnum() or c in "' ") else " " for c in text)
     return [t.strip("'") for t in cleaned.split() if t.strip("'")]
+
+
+def _fold(token: str, lang: str) -> str:
+    """Orthographic normalization used for lookup fallback and spelling —
+    NOT applied to the primary lookup, since dictionary files keep original
+    spellings (e.g. ثلاثة keeps its ة)."""
+    return token.translate(AR_FOLD) if lang == "ar" else token
+
+
+def _fold_index(lang: str) -> dict[str, str]:
+    """folded stem → actual file stem. Dictionary files keep proper Arabic
+    orthography (أم.pose, آسف.pose) but users type bare spellings (ام, اسف)
+    just as often as the reverse — folding BOTH sides is the only lookup
+    that works in each direction. Rebuilt per call: the dir holds a few
+    dozen files and can gain entries at runtime via the upload endpoint."""
+    idx: dict[str, str] = {}
+    d = LANG_DIRS[lang]
+    if d.exists():
+        for f in sorted(d.glob("*.pose")):
+            idx.setdefault(_fold(f.stem, lang), f.stem)
+    return idx
+
+
+def resolve_pose_name(name: str, lang: str = "en") -> str | None:
+    """Actual file stem for `name` (exact match first, then fold-index)."""
+    slug = name.lower().strip().replace(" ", "_")
+    if _pose_file(slug, lang).exists():
+        return slug
+    return _fold_index(lang).get(_fold(slug, lang))
 
 
 def _concat_with_pads(poses: list[Pose], pad_frames: list[int], fps: float) -> Pose:
@@ -193,31 +240,55 @@ def _concat_with_pads(poses: list[Pose], pad_frames: list[int], fps: float) -> P
 
 
 @lru_cache(maxsize=128)
-def build_text_sequence(text: str) -> tuple[bytes, tuple]:
+def build_text_sequence(text: str, lang: str = "en") -> tuple[bytes, tuple]:
     """
     Returns (pose_file_bytes, tokens_meta) where tokens_meta is a tuple of
     dict-like tuples: (token, mode, start_ms, duration_ms, letters) with
     letters = ((ch, start_ms, duration_ms), ...) for fingerspelled tokens.
     """
-    tokens = _tokenize(text)
+    tokens = _tokenize(text, lang)
     if not tokens:
         raise ValueError("No signable words in text")
     if len(tokens) > MAX_TOKENS:
         raise ValueError(f"Too many words (max {MAX_TOKENS})")
 
-    # plan: one entry per token → ("sign", name) or ("spell", [letters])
+    spell_letters = SPELL_LETTERS[lang]
+    digit_words = DIGIT_WORDS[lang]
+
+    # plan: one entry per chip → ("sign", name) or ("spell", [letters]).
+    # Greedy longest-phrase matching first: multi-word dictionary entries
+    # ("thank you", "السلام عليكم") exist as ONE pose file, but naive
+    # per-token lookup would split them into unknown singles and fingerspell
+    # a word we actually have. Mirrored client-side for the chip preview.
     plan = []
-    for tok in tokens:
-        tok = DIGIT_WORDS.get(tok, tok)
-        if _pose_file(tok).exists():
-            plan.append(("sign", tok))
+    i = 0
+    while i < len(tokens):
+        matched = None
+        for n in (3, 2):
+            if i + n <= len(tokens):
+                phrase = resolve_pose_name(" ".join(tokens[i:i + n]), lang)
+                if phrase is not None:
+                    matched = (phrase, n)
+            if matched:
+                break
+        if matched:
+            # stem → display form (file stems use _ for phrase spaces)
+            plan.append(("sign", matched[0].replace("_", " ")))
+            i += matched[1]
+            continue
+
+        tok = digit_words.get(tokens[i], tokens[i])
+        resolved = resolve_pose_name(tok, lang)
+        if resolved is not None:
+            plan.append(("sign", resolved))
         else:
-            letters = [c for c in tok if "a" <= c <= "z"] or [
-                DIGIT_WORDS[c] for c in tok if c in DIGIT_WORDS
+            folded = _fold(tok, lang)
+            letters = [c for c in folded if c in spell_letters] or [
+                digit_words[c] for c in folded if c in digit_words
             ]
-            if not letters:
-                continue
-            plan.append(("spell", letters))
+            if letters:
+                plan.append(("spell", letters))
+        i += 1
     if not plan:
         raise ValueError("No signable words in text")
     if sum(len(p[1]) if p[0] == "spell" else 1 for p in plan) > MAX_SEGMENTS:
@@ -228,12 +299,12 @@ def build_text_sequence(text: str) -> tuple[bytes, tuple]:
     segments = []  # (token_idx, letter_or_None, Pose)
     for t_idx, (mode, payload) in enumerate(plan):
         if mode == "sign":
-            pose = normalize_pose(reduce_holistic(_load(payload)))
+            pose = normalize_pose(reduce_holistic(_load(payload, lang)))
             trim_pose(pose, t_idx > 0, t_idx < len(plan) - 1)
             segments.append((t_idx, None, pose))
         else:
             for ch in payload:
-                pose = normalize_pose(reduce_holistic(_load(ch)))
+                pose = normalize_pose(reduce_holistic(_load(ch, lang)))
                 trim_pose(pose, True, True)
                 _central_peak(pose, SPELL_PEAK_S)
                 segments.append((t_idx, ch, pose))

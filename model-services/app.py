@@ -119,6 +119,12 @@ def predict(payload: PredictRequest):
 
 # ── ASL Pose endpoints ────────────────────────────────────────────────────────
 
+def _check_lang(lang: str) -> str:
+    if lang not in ("en", "ar"):
+        raise HTTPException(status_code=400, detail="lang must be 'en' or 'ar'")
+    return lang
+
+
 def _parse_seq_params(items: str, mode: str) -> tuple[tuple[str, ...], str]:
     names = tuple(n.strip().lower() for n in items.split(",") if n.strip())
     if not names:
@@ -131,7 +137,7 @@ def _parse_seq_params(items: str, mode: str) -> tuple[tuple[str, ...], str]:
 
 
 @app.get("/api/pose-seq")
-def get_pose_seq(items: str, mode: str = "words"):
+def get_pose_seq(items: str, mode: str = "words", lang: str = "en"):
     """
     One smooth, continuous .pose stitched from several signs — sign.mt's own
     concatenation (trim/connect/interpolate/smooth), so sentence playback and
@@ -141,7 +147,7 @@ def get_pose_seq(items: str, mode: str = "words"):
     names, mode = _parse_seq_params(items, mode)
     try:
         from pose_concat import build_sequence
-        data, _ = build_sequence(names, mode)
+        data, _ = build_sequence(names, mode, _check_lang(lang))
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     return Response(
@@ -152,20 +158,20 @@ def get_pose_seq(items: str, mode: str = "words"):
 
 
 @app.get("/api/pose-seq/meta")
-def get_pose_seq_meta(items: str, mode: str = "words"):
+def get_pose_seq_meta(items: str, mode: str = "words", lang: str = "en"):
     """Per-segment durations (ms, final stitched timeline) for UI highlights."""
     names, mode = _parse_seq_params(items, mode)
     try:
         from pose_concat import build_sequence
-        _, durations = build_sequence(names, mode)
+        _, durations = build_sequence(names, mode, _check_lang(lang))
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     return {"items": list(names), "durations_ms": list(durations), "total_ms": sum(durations)}
 
 
-def _pose_text_meta(text: str) -> dict:
+def _pose_text_meta(text: str, lang: str) -> dict:
     from pose_concat import build_text_sequence
-    _, meta = build_text_sequence(text.strip().lower())
+    _, meta = build_text_sequence(text.strip().lower(), lang)
     return {
         "tokens": [
             {
@@ -179,7 +185,7 @@ def _pose_text_meta(text: str) -> dict:
 
 
 @app.get("/api/pose-text")
-def get_pose_text(text: str):
+def get_pose_text(text: str, lang: str = "en"):
     """
     Sign a whole typed sentence as ONE stitched pose: words with a dictionary
     .pose are signed, unknown words are fingerspelled letter by letter
@@ -187,7 +193,7 @@ def get_pose_text(text: str):
     """
     try:
         from pose_concat import build_text_sequence
-        data, _ = build_text_sequence(text.strip().lower())
+        data, _ = build_text_sequence(text.strip().lower(), _check_lang(lang))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except FileNotFoundError as exc:
@@ -197,39 +203,51 @@ def get_pose_text(text: str):
 
 
 @app.get("/api/pose-text/meta")
-def get_pose_text_meta(text: str):
+def get_pose_text_meta(text: str, lang: str = "en"):
     """Token/letter timings for the stitched sentence, for UI highlighting."""
     try:
-        return _pose_text_meta(text)
+        return _pose_text_meta(text, _check_lang(lang))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 
 
-def _pose_path(word: str) -> Path:
+def _pose_path(word: str, lang: str = "en") -> Path:
     slug = word.lower().replace(" ", "_").replace("%20", "_")
-    return POSES_DIR / f"{slug}.pose"
+    base = POSES_DIR / "ar" if lang == "ar" else POSES_DIR
+    path = base / f"{slug}.pose"
+    if not path.exists():
+        # Arabic orthography fold (ام ↔ أم etc.) — same resolution the
+        # sentence plan builder uses, so viewer and free-text agree.
+        from pose_concat import resolve_pose_name
+        resolved = resolve_pose_name(word, lang)
+        if resolved is not None:
+            return base / f"{resolved}.pose"
+    return path
 
 
 @app.get("/api/poses/{word}")
-def get_pose(word: str):
+def get_pose(word: str, lang: str = "en"):
     """
     Serve a pre-generated .pose file for a given ASL word.
     Run  python generate_asl_poses.py  first to populate the poses/ folder.
     """
-    path = _pose_path(word)
+    path = _pose_path(word, _check_lang(lang))
     if not path.exists():
         raise HTTPException(
             status_code=404,
             detail=f"No pose file for '{word}'. "
                    f"Run: python generate_asl_poses.py {word.lower()}"
         )
+    from urllib.parse import quote
     return Response(
         content=path.read_bytes(),
         media_type="application/octet-stream",
         headers={
-            "Content-Disposition": f'inline; filename="{path.name}"',
+            # RFC 5987 form — plain filename="…" breaks on non-latin-1 names
+            # (Arabic pose files) because HTTP headers are latin-1 only.
+            "Content-Disposition": f"inline; filename*=UTF-8''{quote(path.name)}",
             "Cache-Control": "no-cache",
         },
     )
@@ -242,20 +260,19 @@ if __name__ == "__main__":
 
 
 @app.head("/api/poses/{word}")
-def head_pose(word: str):
+def head_pose(word: str, lang: str = "en"):
     """Lightweight existence check used by the frontend."""
-    path = _pose_path(word)
+    path = _pose_path(word, _check_lang(lang))
     if not path.exists():
         raise HTTPException(status_code=404)
     return Response(headers={"Content-Length": str(path.stat().st_size)})
 
 
 @app.get("/api/poses")
-def list_poses():
+def list_poses(lang: str = "en"):
     """List which words have pre-generated .pose files ready."""
-    available = sorted(
-        p.stem.replace("_", " ") for p in POSES_DIR.glob("*.pose")
-    )
+    base = POSES_DIR / "ar" if _check_lang(lang) == "ar" else POSES_DIR
+    available = sorted(p.stem.replace("_", " ") for p in base.glob("*.pose"))
     return {"available": available, "count": len(available)}
 
 

@@ -9,18 +9,60 @@ import { usePoseWords, hasPose, POSES_BASE } from "../../utils/poseViewer";
 
 const W = 320;
 const MAX_TOKENS = 12; // mirrors the server-side limit
-const DIGIT_WORDS = { 1: "one", 2: "two", 3: "three", 4: "four", 5: "five" };
 
-function tokenize(text) {
+// Per-language input handling; the server does the authoritative version of
+// this (pose_concat._tokenize) — the client copy only powers the live chip
+// preview before Play is pressed.
+const LANG_CONFIG = {
+  en: {
+    digits: { 1: "one", 2: "two", 3: "three", 4: "four", 5: "five" },
+    stripRe: /[^a-z0-9' ]+/g,
+    dir: "ltr",
+    placeholder: "Type a sentence… e.g. hello my name is sam",
+  },
+  ar: {
+    digits: { 1: "واحد", 2: "اثنان", 3: "ثلاثة", 4: "اربعة", 5: "خمسة",
+              "١": "واحد", "٢": "اثنان", "٣": "ثلاثة", "٤": "اربعة", "٥": "خمسة" },
+    stripRe: /[^\u0621-\u064A0-9\u0660-\u0669' ]+/g,
+    dir: "rtl",
+    placeholder: "اكتب جملة… مثال: انا اريد شاي",
+  },
+};
+
+function tokenize(text, cfg) {
   return text
     .toLowerCase()
-    .replace(/[^a-z0-9' ]+/g, " ")
+    .replace(cfg.stripRe, " ")
     .split(/\s+/)
     .map((t) => t.replace(/^'+|'+$/g, ""))
     .filter(Boolean);
 }
 
-export default function SentenceBuilder() {
+// Greedy longest-phrase chunking, mirroring the server's plan builder:
+// multi-word dictionary entries ("thank you", "السلام عليكم") are ONE pose
+// file, so they must render as one solid chip instead of two spelled ones.
+function chunkTokens(tokens, poseWords, cfg, lang) {
+  const chips = [];
+  let i = 0;
+  while (i < tokens.length) {
+    let matched = null;
+    for (const n of [3, 2]) {
+      if (i + n <= tokens.length) {
+        const phrase = tokens.slice(i, i + n).join(" ");
+        if (hasPose(poseWords, phrase, lang)) { matched = { text: phrase, mode: "sign", n }; break; }
+      }
+    }
+    if (!matched) {
+      const t = tokens[i];
+      matched = { text: t, mode: hasPose(poseWords, cfg.digits[t] ?? t, lang) ? "sign" : "spell", n: 1 };
+    }
+    chips.push(matched);
+    i += matched.n;
+  }
+  return chips;
+}
+
+export default function SentenceBuilder({ lang = "en" }) {
   const poseElRef = useRef(null);
   const cancelledRef = useRef(false);
   const timersRef = useRef([]);
@@ -32,11 +74,10 @@ export default function SentenceBuilder() {
   const [spellingCh, setSpellingCh] = useState(null); // current fingerspelled letter
   const [error, setError] = useState(null);
 
-  const poseWords = usePoseWords();
-  const tokens = tokenize(text).slice(0, MAX_TOKENS);
-  const tokenModes = tokens.map((t) =>
-    hasPose(poseWords, DIGIT_WORDS[t] ?? t) ? "sign" : "spell"
-  );
+  const cfg = LANG_CONFIG[lang];
+  const poseWords = usePoseWords(lang);
+  const tokens = tokenize(text, cfg).slice(0, MAX_TOKENS);
+  const chips = chunkTokens(tokens, poseWords, cfg, lang);
 
   useEffect(() => {
     const el = poseElRef.current;
@@ -88,7 +129,9 @@ export default function SentenceBuilder() {
     });
   }, []);
 
-  const playSentence = useCallback(async () => {
+  // Plain function (not useCallback): it closes over per-render derived
+  // arrays (tokens/chips), and it's only used as an onClick handler.
+  const playSentence = async () => {
     const query = tokens.join(" ");
     if (!query) return;
     setError(null);
@@ -96,7 +139,7 @@ export default function SentenceBuilder() {
     setIsPlaying(true);
     try {
       const metaRes = await fetch(
-        `${POSES_BASE}/api/pose-text/meta?text=${encodeURIComponent(query)}`
+        `${POSES_BASE}/api/pose-text/meta?text=${encodeURIComponent(query)}&lang=${lang}`
       );
       if (!metaRes.ok) {
         const detail = (await metaRes.json().catch(() => null))?.detail;
@@ -121,7 +164,7 @@ export default function SentenceBuilder() {
       });
 
       await playPoseSrc(
-        `${POSES_BASE}/api/pose-text?text=${encodeURIComponent(query)}`,
+        `${POSES_BASE}/api/pose-text?text=${encodeURIComponent(query)}&lang=${lang}`,
         rate
       );
     } catch (err) {
@@ -132,7 +175,7 @@ export default function SentenceBuilder() {
       setSpellingCh(null);
       setIsPlaying(false);
     }
-  }, [tokens, speed, playPoseSrc, clearTimers]);
+  };
 
   const stopSentence = useCallback(() => {
     cancelledRef.current = true;
@@ -181,7 +224,7 @@ export default function SentenceBuilder() {
               pointerEvents: "none", color: "var(--secondary)",
             }}
           >
-            🔤 {spellingCh}
+            🔤 <span dir={cfg.dir}>{spellingCh}</span>
           </span>
         )}
       </div>
@@ -193,7 +236,8 @@ export default function SentenceBuilder() {
         disabled={isPlaying}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter" && !isPlaying) playSentence(); }}
-        placeholder="Type a sentence… e.g. hello my name is sam"
+        placeholder={cfg.placeholder}
+        dir={cfg.dir}
         style={{
           width: "100%", maxWidth: `${W}px`, padding: "10px 14px", fontSize: "0.9rem",
           borderRadius: "10px", border: "1px solid var(--btn-secondary-border)",
@@ -210,12 +254,12 @@ export default function SentenceBuilder() {
             Known words are signed; unknown words are fingerspelled.
           </span>
         )}
-        {tokens.map((t, i) => {
-          const spelled = tokenModes[i] === "spell";
+        {chips.map((c, i) => {
+          const spelled = c.mode === "spell";
           const active = playingIdx === i;
           return (
             <span
-              key={`${t}-${i}`}
+              key={`${c.text}-${i}`}
               title={spelled ? "Not in the sign dictionary — will be fingerspelled" : "Signed from the dictionary"}
               style={{
                 padding: "5px 10px", fontSize: "0.76rem", borderRadius: "8px",
@@ -224,7 +268,7 @@ export default function SentenceBuilder() {
                 color: active ? "#ffffff" : "var(--stickman-btn-inactive-color)",
               }}
             >
-              {spelled && "🔤 "}{t.toUpperCase()}
+              {spelled && "🔤 "}<span dir={cfg.dir}>{lang === "ar" ? c.text : c.text.toUpperCase()}</span>
             </span>
           );
         })}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ASL_POSES, ASL_HINTS } from "../utils/aslHandPoses";
 import { WORD_ANIMS, WORD_CATEGORIES, RN, LN } from "../utils/aslWordPoses";
+import { AR_WORDS, AR_WORD_CATEGORIES, AR_ALPHABET } from "../utils/arslWords";
 import { COLORS, EASE, drawHand, lerpXY, lerp, solveArm } from "../utils/aslRenderer";
 import { usePoseWords, hasPose, poseUrl, poseSeqUrl, fetchPoseSeqMeta } from "../utils/poseViewer";
 
@@ -20,13 +21,40 @@ const L_HINT = [42, 165];
 const RELAXED = ASL_POSES[" "];
 const SPEED_MULT = { slow: 1.0, normal: 0.55 };
 const LETTER_GAP_MS = 150; // pause between fingerspelled letters
-const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 // The Fingerspelling tab lives alongside the word categories but plays
-// per-letter .pose clips (a.pose … z.pose, fetched from sign.mt) instead of
-// picking from WORD_ANIMS.
-const FINGERSPELL_TAB = { id: "fingerspell", label: "🔤 Fingerspelling" };
-const TABS = [...WORD_CATEGORIES, FINGERSPELL_TAB];
+// per-letter .pose clips fetched from sign.mt instead of picking words.
+const FINGERSPELL_ID = "fingerspell";
+
+// Everything language-specific in one lookup: word data (ArSL entries are
+// pose-only — no canvas keyframes), category tabs, the fingerspelling
+// alphabet, and how to filter typed spell input down to spellable letters.
+const LANG_CONFIG = {
+  en: {
+    words: WORD_ANIMS,
+    categories: WORD_CATEGORIES,
+    fingerspellLabel: "🔤 Fingerspelling",
+    alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),
+    spellFilter: (s) => s.toLowerCase().replace(/[^a-z]/g, "").split(""),
+    defaultWord: "HELLO",
+    attribution: "🎥 Motion captured from a real signer · skeleton data via sign.mt",
+    dir: "ltr",
+    spellPlaceholder: "Type a word to fingerspell…",
+    spellHelp: "Type a word and press Play to spell it letter by letter, or tap a letter to watch its handshape.",
+  },
+  ar: {
+    words: AR_WORDS,
+    categories: AR_WORD_CATEGORIES,
+    fingerspellLabel: "🔤 تهجئة بالأصابع",
+    alphabet: AR_ALPHABET,
+    spellFilter: (s) => s.split("").filter((c) => AR_ALPHABET.includes(c)),
+    defaultWord: "اسم",
+    attribution: "🎥 Motion captured from a real signer · Jordanian Sign Language via sign.mt",
+    dir: "rtl",
+    spellPlaceholder: "اكتب كلمة لتهجئتها…",
+    spellHelp: "Type a word and press Play to spell it letter by letter, or tap a letter to watch its handshape.",
+  },
+};
 
 // ── Whole scene: stick body (IK arms) + two hands ─────────────────────────────
 // `hint` biases which of the two elbow-bend solutions to use. Pass the
@@ -76,30 +104,42 @@ function drawScene(ctx, rWrist, lWrist, rHand, lHand, s = {}, hint = {}) {
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
-export default function ASLWordStickman() {
+export default function ASLWordStickman({ lang = "en" }) {
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
   const rafRef = useRef(null);
   const playedRef = useRef(false); // has a sign finished at least once?
 
-  const [selected, setSelected] = useState("HELLO");
+  const cfg = LANG_CONFIG[lang];
+  const TABS = [...cfg.categories, { id: FINGERSPELL_ID, label: cfg.fingerspellLabel }];
+
+  // Guard against the word list shrinking out from under the configured
+  // default (vocabulary is pruned whenever a clip turns out to be a
+  // fingerspelling fallback) — fall back to the first word we actually have.
+  const [selected, setSelected] = useState(
+    cfg.words[cfg.defaultWord] ? cfg.defaultWord : Object.keys(cfg.words)[0]
+  );
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState("normal");
-  const [category, setCategory] = useState(WORD_CATEGORIES[0].id);
+  const [category, setCategory] = useState(cfg.categories[0].id);
   const [spellInput, setSpellInput] = useState("");
   const [lastLetter, setLastLetter] = useState(null);
 
   // Words with a .pose file play as a sign.mt skeleton captured from a real
-  // signer; the rest fall back to the hand-authored canvas animation.
-  // Fingerspelling is always pose-based (per-letter clips).
-  const poseWords = usePoseWords();
-  const isFingerspell = category === FINGERSPELL_TAB.id;
-  const poseMode = isFingerspell || hasPose(poseWords, selected);
+  // signer; the rest fall back to the hand-authored canvas animation
+  // (English-only). Fingerspelling is always pose-based (per-letter clips).
+  const poseWords = usePoseWords(lang);
+  const isFingerspell = category === FINGERSPELL_ID;
+  const poseMode = isFingerspell || hasPose(poseWords, selected, lang);
   const rate = speed === "slow" ? 0.5 : 1;
 
-  const wordsInCategory = Object.keys(WORD_ANIMS).filter(
-    (w) => WORD_ANIMS[w].category === category
+  const wordsInCategory = Object.keys(cfg.words).filter(
+    (w) => cfg.words[w].category === category
   );
+
+  // NOTE: the parent renders this component with key={lang}, so a language
+  // switch remounts it — selection, spelling and playback state all reset
+  // naturally without effect gymnastics.
 
   // ── sign.mt skeleton playback (imperative <pose-viewer>) ────────────────────
   const poseElRef = useRef(null);
@@ -118,8 +158,8 @@ export default function ASLWordStickman() {
   useEffect(() => {
     const el = poseElRef.current;
     if (!el || isPlaying || isFingerspell) return;
-    if (hasPose(poseWords, selected)) el.src = poseUrl(selected);
-  }, [selected, poseWords, isFingerspell, isPlaying]);
+    if (hasPose(poseWords, selected, lang)) el.src = poseUrl(selected, lang);
+  }, [selected, poseWords, isFingerspell, isPlaying, lang]);
 
   // Plays one .pose URL to completion; resolves on ended$, cancellation
   // (polled — the component has no abort API), or a hard timeout.
@@ -186,11 +226,11 @@ export default function ASLWordStickman() {
   // uniform letter rhythm), highlighting each letter as it plays. Falls back
   // to letter-by-letter clips if the stitch endpoint is unreachable.
   const spellCurrentInput = async () => {
-    const letters = spellInput.toLowerCase().replace(/[^a-z]/g, "").split("");
+    const letters = cfg.spellFilter(spellInput);
     if (letters.length === 0) return;
     setLastLetter(null);
     try {
-      const meta = await fetchPoseSeqMeta(letters, "spell");
+      const meta = await fetchPoseSeqMeta(letters, "spell", lang);
       cancelledPoseRef.current = false;
       setIsPlaying(true);
       let atMs = 0;
@@ -199,18 +239,18 @@ export default function ASLWordStickman() {
         atMs += meta.durations_ms[i];
         return timer;
       });
-      await playPoseUrl(poseSeqUrl(letters, "spell"), rate);
+      await playPoseUrl(poseSeqUrl(letters, "spell", lang), rate);
       clearSpellTimers();
       setIsPlaying(false);
     } catch {
-      playPoseSequence(letters.map((l) => poseUrl(l)), rate);
+      playPoseSequence(letters.map((l) => poseUrl(l, lang)), rate);
     }
   };
 
   const playLetter = (letter) => {
     setLastLetter(letter);
     // Single-letter "spell" stitch = just the trimmed, held peak handshape.
-    playPoseSequence([poseSeqUrl([letter], "spell")], rate);
+    playPoseSequence([poseSeqUrl([letter], "spell", lang)], rate);
   };
 
   useEffect(() => () => { cancelledPoseRef.current = true; clearSpellTimers(); }, [clearSpellTimers]);
@@ -385,8 +425,8 @@ export default function ASLWordStickman() {
             disabled={isPlaying}
             onClick={() => {
               setCategory(c.id);
-              const firstInCategory = Object.keys(WORD_ANIMS).find(
-                (w) => WORD_ANIMS[w].category === c.id
+              const firstInCategory = Object.keys(cfg.words).find(
+                (w) => cfg.words[w].category === c.id
               );
               if (firstInCategory) setSelected(firstInCategory);
             }}
@@ -414,7 +454,8 @@ export default function ASLWordStickman() {
               disabled={isPlaying}
               onChange={(e) => setSpellInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && !isPlaying) spellCurrentInput(); }}
-              placeholder="Type a word to fingerspell…"
+              placeholder={cfg.spellPlaceholder}
+              dir={cfg.dir}
               style={{
                 flex: 1, padding: "8px 12px", fontSize: "0.85rem",
                 borderRadius: "8px", border: "1px solid var(--btn-secondary-border)",
@@ -424,7 +465,7 @@ export default function ASLWordStickman() {
             />
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", maxWidth: `${W}px`, justifyContent: "center" }}>
-            {ALPHABET.map((L) => (
+            {cfg.alphabet.map((L) => (
               <button
                 key={L}
                 type="button"
@@ -461,7 +502,7 @@ export default function ASLWordStickman() {
                 color: selected === w ? "var(--stickman-btn-active-color)" : "var(--stickman-btn-inactive-color)",
               }}
             >
-              {w}
+              <span dir={cfg.dir}>{w}</span>
             </button>
           ))}
         </div>
@@ -488,14 +529,14 @@ export default function ASLWordStickman() {
         </div>
         <button
           type="button"
-          disabled={isFingerspell && !isPlaying && spellInput.replace(/[^a-zA-Z]/g, "") === ""}
+          disabled={isFingerspell && !isPlaying && cfg.spellFilter(spellInput).length === 0}
           onClick={
             isPlaying
               ? (poseMode ? stopPose : stopAnim)
               : isFingerspell
                 ? spellCurrentInput
                 : poseMode
-                  ? () => playPoseSequence([poseUrl(selected)], rate)
+                  ? () => playPoseSequence([poseUrl(selected, lang)], rate)
                   : () => playWord(selected, SPEED_MULT[speed])
           }
           style={{
@@ -510,25 +551,27 @@ export default function ASLWordStickman() {
 
       {isFingerspell ? (
         <p style={{ color: "var(--stickman-label-color)", margin: 0, fontSize: "0.8rem", textAlign: "center" }}>
-          {lastLetter && ASL_HINTS[lastLetter] ? (
+          {lastLetter && lang === "en" && ASL_HINTS[lastLetter] ? (
             <>
               <span style={{ color: "var(--secondary)", fontWeight: 600 }}>{lastLetter}</span>
               {" — "}{ASL_HINTS[lastLetter]}
             </>
+          ) : lastLetter ? (
+            <span dir={cfg.dir} style={{ color: "var(--secondary)", fontWeight: 600, fontSize: "1rem" }}>{lastLetter}</span>
           ) : (
-            "Type a word and press Play to spell it letter by letter, or tap a letter to watch its handshape."
+            cfg.spellHelp
           )}
           <span style={{ display: "block", marginTop: "2px", fontSize: "0.72rem", opacity: 0.75 }}>
-            🎥 Motion captured from a real signer · skeleton data via sign.mt
+            {cfg.attribution}
           </span>
         </p>
-      ) : WORD_ANIMS[selected] && (
+      ) : cfg.words[selected] && (
         <p style={{ color: "var(--stickman-label-color)", margin: 0, fontSize: "0.8rem", textAlign: "center" }}>
-          <span style={{ color: "var(--secondary)", fontWeight: 600 }}>{selected}</span>
-          {" — "}{WORD_ANIMS[selected].description}
+          <span dir={cfg.dir} style={{ color: "var(--secondary)", fontWeight: 600 }}>{selected}</span>
+          {" — "}{cfg.words[selected].description}
           {poseMode && (
             <span style={{ display: "block", marginTop: "2px", fontSize: "0.72rem", opacity: 0.75 }}>
-              🎥 Motion captured from a real signer · skeleton data via sign.mt
+              {cfg.attribution}
             </span>
           )}
         </p>
