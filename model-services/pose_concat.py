@@ -210,7 +210,13 @@ def _fold_index(lang: str) -> dict[str, str]:
     d = LANG_DIRS[lang]
     if d.exists():
         for f in sorted(d.glob("*.pose")):
-            idx.setdefault(_fold(f.stem, lang), f.stem)
+            folded = _fold(f.stem, lang)
+            idx.setdefault(folded, f.stem)
+            # The jos dictionary keys many nouns under their definite form
+            # (القلب, السوق) while users type the bare noun (قلب, سوق) —
+            # register an ال-stripped alias so both resolve to the file.
+            if lang == "ar" and folded.startswith("ال") and len(folded) > 4:
+                idx.setdefault(folded[2:], f.stem)
     return idx
 
 

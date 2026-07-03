@@ -1,0 +1,54 @@
+\newpage
+% ==========================================
+%              CHAPTER NINE
+% ==========================================
+\thispagestyle{plain}
+
+\begin{center}
+    \vspace*{0.5cm}
+    {\large \textit{Chapter Nine}} \\[0.4cm]
+    {\Large \textbf{9 \quad FUTURE WORK}}
+\end{center}
+\addcontentsline{toc}{chapter}{\textbf{9 \quad FUTURE WORK}}
+\vspace{0.45in}
+
+\normalsize
+\startchapterfloats{9}
+
+\noindent Eshara deliberately scoped isolated letter and word recognition in a web browser. Several extensions follow naturally but were deferred to keep the graduation deliverable achievable within one academic year~\cite{duarte2021how2sign,sidig2021karsl}.\par\vspace{0.3cm}
+
+\noindent\textbf{9.1\quad Continuous sign-language recognition and translation}\par
+\addcontentsline{toc}{section}{\numberline{9.1}CONTINUOUS SIGN-LANGUAGE RECOGNITION AND TRANSLATION}
+\vspace{0.2cm}
+
+\noindent How2Sign provides hundreds of hours of continuous ASL aligned with English subtitles~\cite{duarte2021how2sign}. This can be extended with transformer encoders and weakly supervised alignment (Koller et al.)~\cite{koller2020weakly} once isolated-word accuracy is stable in production. RWTH-PHOENIX-Weather offers a parallel path for European sign languages~\cite{forster2014rwth}. Continuous SLR requires segmentation, gloss alignment, and often language modelling beyond Eshara's fixed-window classifiers~\cite{camgoz2018neural}.\par\vspace{0.3cm}
+
+\noindent\textbf{9.2\quad Expanded Arabic vocabulary and dialect coverage}\par
+\addcontentsline{toc}{section}{\numberline{9.2}EXPANDED ARABIC VOCABULARY AND DIALECT COVERAGE}
+\vspace{0.2cm}
+
+\noindent Scaling from the deployed 100-class word vocabulary (SignID 71--170) toward full KArSL-502 (or beyond) requires additional extraction time, GPU budget, and per-class sample growth~\cite{sidig2021karsl}. Regional dialects (Egyptian, Levantine, Maghrebi, Gulf) differ substantially; a single Saudi-centric corpus cannot represent all Arab deaf communities~\cite{who2024hearing}. Future work should partner with regional deaf organisations for data collection and vocabulary prioritisation.\par\vspace{0.3cm}
+
+\noindent\textbf{9.3\quad Improved real-time robustness}\par
+\addcontentsline{toc}{section}{\numberline{9.3}IMPROVED REAL-TIME ROBUSTNESS}
+\vspace{0.2cm}
+
+\noindent Promising engineering directions include: automatic letter-vs-word mode detection (reducing manual UI switching); temporal smoothing for word predictions; lighting normalisation on landmarks; multi-signer rejection; and confidence-calibrated rejection of out-of-vocabulary signs~\cite{zhang2020mediapipe,deng2024skeleton}. Live latency can be further reduced by ONNX export of letter MLPs and server-side batching optimisations. The most immediate item, however, is closing the integration gap noted in Chapter~5, Section~5.5.3: wiring the deployed 225-D ArSL word BiLSTM into \texttt{model-services} behind the same \texttt{predict\_word(session\_id, image\_base64)} contract already used for the WLASL ASL word engine, so that \texttt{arabic + words} requests return real predictions instead of a mock response. A formal SUS evaluation with deaf-community participants should replace the informal pilot reported in Table~\ref{tab:ch7-usability} (Chapter~5).\par\vspace{0.3cm}
+
+\noindent\textbf{9.4\quad Mobile and edge deployment}\par
+\addcontentsline{toc}{section}{\numberline{9.4}MOBILE AND EDGE DEPLOYMENT}
+\vspace{0.2cm}
+
+\noindent TensorFlow Lite or ONNX Runtime export could enable on-device inference for offline classroom use, and an in-browser path via TensorFlow.js~\cite{tensorflowjs2024} would remove the server round-trip entirely for the lighter letter MLPs. Quantisation-aware training would shrink the $\sim$255\,K-parameter ArSL word BiLSTM for mobile SoCs. This was explicitly out of graduation web-only scope but aligns with accessibility goals in low-connectivity settings~\cite{abadi2016tensorflow,sandler2018mobilenetv2}.\par\vspace{0.3cm}
+
+\noindent\textbf{9.5\quad Bidirectional communication}\par
+\addcontentsline{toc}{section}{\numberline{9.5}BIDIRECTIONAL COMMUNICATION}
+\vspace{0.2cm}
+
+\noindent Pairing sign-to-text (Eshara's current capability) with text-to-sign animation or avatar synthesis would support fuller deaf--hearing dialogue~\cite{camgoz2018neural}. Neural sign-language translation systems demonstrate feasibility on sentence-level corpora but require substantially more data and compute than isolated graduation classifiers.\par\vspace{0.3cm}
+
+\noindent\textbf{9.6\quad Formal user studies and community partnership}\par
+\addcontentsline{toc}{section}{\numberline{9.6}FORMAL USER STUDIES AND COMMUNITY PARTNERSHIP}
+\vspace{0.2cm}
+
+\noindent A structured evaluation with deaf and hard-of-hearing participants across Arab countries --- using the System Usability Scale (SUS), task-completion time, and qualitative interviews --- would validate usability beyond offline accuracy~\cite{wcag22}. Co-design with community stakeholders is essential before any public deployment claim~\cite{who2024hearing}.\par

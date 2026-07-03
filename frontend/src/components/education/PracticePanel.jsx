@@ -3,6 +3,7 @@ import { ASL_HINTS } from "../../utils/aslHandPoses";
 import { AR_ALPHABET, AR_PRACTICE_READY_WORDS } from "../../utils/arslWords";
 import { useCamera } from "../../utils/useCamera";
 import { isLetterMatch, isWordMatch, lowConfidenceMessage, PRACTICE_READY_WORDS } from "../../utils/practiceMatch";
+import { poseUrl, poseSeqUrl } from "../../utils/poseViewer";
 import api from "../../services/api";
 
 // Practice Mode reuses the exact same webcam + /predict pipeline as the
@@ -54,11 +55,21 @@ export default function PracticePanel({ lang = "en" }) {
   const [checking, setChecking] = useState(false);
   const [countdown, setCountdown] = useState(null);
   const [result, setResult] = useState(null); // { ok, confidence, predicted, message }
+  const [showTarget, setShowTarget] = useState(false); // mini skeleton demo of the target
 
   const countdownTimer = useRef(null);
   useEffect(() => () => clearTimeout(countdownTimer.current), []);
 
   const target = mode === "letters" ? targetLetter : targetWord;
+
+  // Demo clip for the current target: letters use the held-peak "spell"
+  // stitch (raw letter clips can be a few unreadable frames); words play
+  // their dictionary sign directly. Works identically for both languages —
+  // this is the ArSL equivalent of the English-only text hints, but with
+  // verified motion-capture content instead of authored descriptions.
+  const targetDemoUrl = mode === "letters"
+    ? poseSeqUrl([target], "spell", lang)
+    : poseUrl(target, lang);
 
   const nextTarget = () => {
     setResult(null);
@@ -210,10 +221,38 @@ export default function PracticePanel({ lang = "en" }) {
             <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>{ASL_HINTS[target]}</div>
           )}
         </div>
-        <button type="button" onClick={nextTarget} disabled={checking} style={{ width: "auto", padding: "8px 14px" }}>
-          🔀 New {mode === "letters" ? "Letter" : "Word"}
-        </button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button
+            type="button"
+            onClick={() => setShowTarget((v) => !v)}
+            disabled={checking}
+            style={{ width: "auto", padding: "8px 14px" }}
+          >
+            {showTarget ? "🙈 Hide Sign" : "👁 Show Sign"}
+          </button>
+          <button type="button" onClick={nextTarget} disabled={checking} style={{ width: "auto", padding: "8px 14px" }}>
+            🔀 New {mode === "letters" ? "Letter" : "Word"}
+          </button>
+        </div>
       </div>
+
+      {/* Target demo — a looping skeleton clip of the sign being asked for.
+          key forces a reload when the target changes so autoplay refires. */}
+      {showTarget && (
+        <pose-viewer
+          key={`${mode}-${target}-${lang}`}
+          src={targetDemoUrl}
+          loop={true}
+          autoplay={true}
+          thickness={6}
+          style={{
+            display: "block", width: "100%", maxWidth: "240px", height: "220px",
+            alignSelf: "center", borderRadius: "12px",
+            background: "rgba(15, 23, 42, 0.7)",
+            border: "1px solid var(--btn-secondary-border)",
+          }}
+        />
+      )}
 
       {/* Camera preview */}
       <div className="video-placeholder" style={{ position: "relative", width: "100%", aspectRatio: "4/3" }}>

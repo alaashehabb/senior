@@ -1,0 +1,157 @@
+\contentsline {chapter}{\textbf {LIST OF FIGURES}}{vi}{}%
+\contentsline {chapter}{\textbf {LIST OF TABLES}}{xi}{}%
+\contentsline {chapter}{\textbf {LIST OF ACRONYMS/ABBREVIATIONS}}{xiii}{}%
+\contentsline {chapter}{\textbf {1 \hskip 1em\relax INTRODUCTION}}{1}{}%
+\contentsline {section}{\hbox to\@tempdima {1.1\hfil }PROJECT OVERVIEW}{1}{}%
+\contentsline {section}{\hbox to\@tempdima {1.2\hfil }PROBLEM STATEMENT}{2}{}%
+\contentsline {subsection}{\hbox to\@tempdima {1.2.1\hfil }Current Constraints:}{2}{}%
+\contentsline {subsection}{\hbox to\@tempdima {1.2.2\hfil }Technical and Practical Gap:}{3}{}%
+\contentsline {section}{\hbox to\@tempdima {1.3\hfil }PROJECT MOTIVE}{3}{}%
+\contentsline {section}{\hbox to\@tempdima {1.4\hfil }AIMS AND OBJECTIVES}{3}{}%
+\contentsline {subsection}{\hbox to\@tempdima {1.4.1\hfil }Aims:}{3}{}%
+\contentsline {subsection}{\hbox to\@tempdima {1.4.2\hfil }Objectives:}{3}{}%
+\contentsline {section}{\hbox to\@tempdima {1.5\hfil }LITERATURE REVIEW}{4}{}%
+\contentsline {subsection}{\hbox to\@tempdima {1.5.1\hfil }Existing Work:}{4}{}%
+\contentsline {subsection}{\hbox to\@tempdima {1.5.2\hfil }Scholarly Views:}{4}{}%
+\contentsline {subsection}{\hbox to\@tempdima {1.5.3\hfil }Challenges and Gaps:}{5}{}%
+\contentsline {subsection}{\hbox to\@tempdima {1.5.4\hfil }Hypothesis:}{5}{}%
+\contentsline {section}{\hbox to\@tempdima {1.6\hfil }METHODOLOGY}{5}{}%
+\contentsline {subsection}{\hbox to\@tempdima {1.6.1\hfil }Data Acquisition:}{6}{}%
+\contentsline {subsection}{\hbox to\@tempdima {1.6.2\hfil }Cleaning and Preprocessing:}{6}{}%
+\contentsline {section}{\hbox to\@tempdima {1.7\hfil }REPORT ORGANISATION}{7}{}%
+\contentsline {chapter}{\textbf {2 \hskip 1em\relax LITERATURE REVIEW}}{8}{}%
+\contentsline {section}{\hbox to\@tempdima {2.1\hfil }HISTORY OF SIGN-LANGUAGE RECOGNITION}{8}{}%
+\contentsline {section}{\hbox to\@tempdima {2.2\hfil }MACHINE LEARNING FOUNDATIONS FOR SLR}{11}{}%
+\contentsline {subsection}{\hbox to\@tempdima {2.2.1\hfil }Supervised learning and classification:}{11}{}%
+\contentsline {subsection}{\hbox to\@tempdima {2.2.2\hfil }Static versus sequence classification:}{12}{}%
+\contentsline {subsection}{\hbox to\@tempdima {2.2.3\hfil }Families of neural networks in SLR:}{13}{}%
+\contentsline {subsection}{\hbox to\@tempdima {2.2.4\hfil }Training, validation, and evaluation:}{14}{}%
+\contentsline {subsection}{\hbox to\@tempdima {2.2.5\hfil }Isolated SLR versus continuous SLR as ML problems:}{15}{}%
+\contentsline {subsection}{\hbox to\@tempdima {2.2.6\hfil }Preprocessing, normalisation, and augmentation:}{16}{}%
+\contentsline {section}{\hbox to\@tempdima {2.3\hfil }COMPUTER VISION APPROACHES TO SLR}{17}{}%
+\contentsline {subsection}{\hbox to\@tempdima {2.3.1\hfil }Image-Based Convolutional Methods:}{17}{}%
+\contentsline {subsection}{\hbox to\@tempdima {2.3.2\hfil }Skeleton and Landmark Methods:}{18}{}%
+\contentsline {subsection}{\hbox to\@tempdima {2.3.3\hfil }Hybrid CNN--RNN and Continuous SLR:}{20}{}%
+\contentsline {section}{\hbox to\@tempdima {2.4\hfil }DEEP-LEARNING ARCHITECTURES}{21}{}%
+\contentsline {subsection}{\hbox to\@tempdima {2.4.1\hfil }Multi-Layer Perceptrons (letter models):}{21}{}%
+\contentsline {subsection}{\hbox to\@tempdima {2.4.2\hfil }Inception I3D (ASL word model):}{21}{}%
+\contentsline {subsection}{\hbox to\@tempdima {2.4.3\hfil }Bidirectional LSTM (ArSL word model):}{22}{}%
+\contentsline {subsection}{\hbox to\@tempdima {2.4.4\hfil }Attention and transformers (literature context):}{22}{}%
+\contentsline {section}{\hbox to\@tempdima {2.5\hfil }POSE-ESTIMATION FRAMEWORKS}{22}{}%
+\contentsline {section}{\hbox to\@tempdima {2.6\hfil }SIGN-LANGUAGE DATASETS}{23}{}%
+\contentsline {section}{\hbox to\@tempdima {2.7\hfil }BILINGUAL AND ARABIC SIGN-LANGUAGE RESEARCH}{26}{}%
+\contentsline {section}{\hbox to\@tempdima {2.8\hfil }REAL-TIME WEB DEPLOYMENT}{27}{}%
+\contentsline {section}{\hbox to\@tempdima {2.9\hfil }RESEARCH GAP AND PROJECT POSITIONING}{28}{}%
+\contentsline {section}{\hbox to\@tempdima {2.10\hfil }COMPARISON OF ESHARA'S FOUR MODELS}{29}{}%
+\contentsline {chapter}{\textbf {3 \hskip 1em\relax METHODOLOGY --- LETTER RECOGNITION}}{32}{}%
+\contentsline {section}{\hbox to\@tempdima {3.1\hfil }HIGH-LEVEL SYSTEM ARCHITECTURE}{32}{}%
+\contentsline {section}{\hbox to\@tempdima {3.2\hfil }LETTER DATASETS AND SPLIT POLICIES}{34}{}%
+\contentsline {subsection}{\hbox to\@tempdima {3.2.1\hfil }ASL Alphabet (English Letters):}{35}{}%
+\contentsline {subsection}{\hbox to\@tempdima {3.2.2\hfil }ArASL2018 (Arabic Letters):}{35}{}%
+\contentsline {subsection}{\hbox to\@tempdima {3.2.3\hfil }End-to-End Training Pipeline:}{35}{}%
+\contentsline {section}{\hbox to\@tempdima {3.3\hfil }FEATURE EXTRACTION FOR LETTERS}{37}{}%
+\contentsline {section}{\hbox to\@tempdima {3.4\hfil }MODEL 1 --- ASL LETTER MLP}{43}{}%
+\contentsline {section}{\hbox to\@tempdima {3.5\hfil }MODEL 2 --- ArSL LETTER MLP}{44}{}%
+\contentsline {section}{\hbox to\@tempdima {3.6\hfil }LETTER STABILISATION DECODER}{47}{}%
+\contentsline {section}{\hbox to\@tempdima {3.7\hfil }ARABIC TEXT RENDERING}{48}{}%
+\contentsline {section}{\hbox to\@tempdima {3.8\hfil }ENGINEERING TRADE-OFFS (LETTERS)}{49}{}%
+\contentsline {section}{\hbox to\@tempdima {3.9\hfil }EVALUATION PROTOCOL (LETTERS)}{50}{}%
+\contentsline {chapter}{\textbf {4 \hskip 1em\relax METHODOLOGY --- WORD RECOGNITION}}{51}{}%
+\contentsline {section}{\textbf {PART A: ASL WORD RECOGNITION (Model 3)}}{52}{}%
+\contentsline {section}{\hbox to\@tempdima {4.1\hfil }WLASL DATASET AND SPLIT POLICY}{52}{}%
+\contentsline {section}{\hbox to\@tempdima {4.2\hfil }ASL FEATURE EXTRACTION --- RGB CLIP PIPELINE}{53}{}%
+\contentsline {section}{\hbox to\@tempdima {4.3\hfil }MODEL 3 --- ASL WORD INCEPTION I3D}{55}{}%
+\contentsline {subsection}{\hbox to\@tempdima {4.3.1\hfil }Architectural Family --- Inflated 3-D ConvNet:}{55}{}%
+\contentsline {subsection}{\hbox to\@tempdima {4.3.2\hfil }Building Block --- Unit3D:}{55}{}%
+\contentsline {subsection}{\hbox to\@tempdima {4.3.3\hfil }InceptionModule --- 4-Branch Parallel Block:}{56}{}%
+\contentsline {subsection}{\hbox to\@tempdima {4.3.4\hfil }Full Layer Stack:}{57}{}%
+\contentsline {subsection}{\hbox to\@tempdima {4.3.5\hfil }Temporal Logit Aggregation and Softmax:}{58}{}%
+\contentsline {subsection}{\hbox to\@tempdima {4.3.6\hfil }Checkpoint and Parameter Count:}{59}{}%
+\contentsline {section}{\hbox to\@tempdima {4.4\hfil }ASL WORD STABILISATION DECODER}{59}{}%
+\contentsline {section}{\hbox to\@tempdima {4.5\hfil }ASL INFERENCE PATH (END-TO-END)}{60}{}%
+\contentsline {section}{\textbf {PART B: ArSL WORD RECOGNITION (Model 4)}}{61}{}%
+\contentsline {section}{\hbox to\@tempdima {4.6\hfil }KArSL DATASET AND SPLIT POLICY}{61}{}%
+\contentsline {section}{\hbox to\@tempdima {4.7\hfil }ArSL FEATURE EXTRACTION --- 225-D HOLISTIC PIPELINE}{62}{}%
+\contentsline {subsection}{\hbox to\@tempdima {4.7.1\hfil }225-D Feature Vector Composition:}{62}{}%
+\contentsline {subsection}{\hbox to\@tempdima {4.7.2\hfil }Body-Relative Normalisation:}{64}{}%
+\contentsline {subsection}{\hbox to\@tempdima {4.7.3\hfil }Clip Alignment (Trim / Pad):}{64}{}%
+\contentsline {section}{\hbox to\@tempdima {4.8\hfil }MODEL 4 --- ArSL WORD STACKED BiLSTM}{66}{}%
+\contentsline {subsection}{\hbox to\@tempdima {4.8.1\hfil }LSTM Cell Equations:}{66}{}%
+\contentsline {subsection}{\hbox to\@tempdima {4.8.2\hfil }Bidirectional LSTM:}{67}{}%
+\contentsline {subsection}{\hbox to\@tempdima {4.8.4\hfil }Parameter Count:}{69}{}%
+\contentsline {subsection}{\hbox to\@tempdima {4.8.5\hfil }Loss and Training:}{70}{}%
+\contentsline {section}{\hbox to\@tempdima {4.9\hfil }ArSL INFERENCE PATH (END-TO-END)}{70}{}%
+\contentsline {section}{\hbox to\@tempdima {4.10\hfil }CROSS-LANGUAGE PIPELINE COMPARISON}{71}{}%
+\contentsline {section}{\hbox to\@tempdima {4.11\hfil }ENGINEERING TRADE-OFFS}{73}{}%
+\contentsline {section}{\hbox to\@tempdima {4.12\hfil }EVALUATION PROTOCOL (WORDS)}{74}{}%
+\contentsline {chapter}{\textbf {5 \hskip 1em\relax SYSTEM IMPLEMENTATION}}{76}{}%
+\contentsline {section}{\hbox to\@tempdima {5.1\hfil }SYSTEM ARCHITECTURE}{76}{}%
+\contentsline {section}{\hbox to\@tempdima {5.2\hfil }FRONTEND DESIGN}{78}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.2.1\hfil }State and component architecture:}{78}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.2.2\hfil }Styling and theming:}{78}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.2.3\hfil }Education module interface:}{79}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.2.4\hfil }Webcam capture and layout:}{79}{}%
+\contentsline {section}{\hbox to\@tempdima {5.3\hfil }BACKEND INTEGRATION AND AUTHENTICATION}{79}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.3.1\hfil }Core application server:}{79}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.3.2\hfil }Authentication infrastructure:}{79}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.3.3\hfil }Real-time communication (Socket.IO):}{81}{}%
+\contentsline {section}{\hbox to\@tempdima {5.4\hfil }DATABASE DESIGN}{81}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.4.1\hfil }Prisma ORM and SQLite:}{81}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.4.2\hfil }Chat and message models:}{82}{}%
+\contentsline {section}{\hbox to\@tempdima {5.5\hfil }TRANSLATION WORKFLOW AND AI MODEL COMMUNICATION}{84}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.5.1\hfil }Image capture and encoding:}{84}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.5.2\hfil }Cross-service communication:}{84}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.5.3\hfil }Model inference pipeline:}{85}{}%
+\contentsline {section}{\hbox to\@tempdima {5.6\hfil }ASL WORD MODEL INTEGRATION (WLASL / INCEPTION I3D)}{85}{}%
+\contentsline {section}{\hbox to\@tempdima {5.7\hfil }NAVIGATION FLOW AND MAIN PAGES}{86}{}%
+\contentsline {section}{\hbox to\@tempdima {5.8\hfil }FEATURES, FUNCTIONALITY, AND UX DESIGN}{89}{}%
+\contentsline {section}{\hbox to\@tempdima {5.9\hfil }SECURITY CONSIDERATIONS}{89}{}%
+\contentsline {section}{\hbox to\@tempdima {5.10\hfil }DEPLOYMENT}{90}{}%
+\contentsline {section}{\hbox to\@tempdima {5.11\hfil }ERROR HANDLING AND TESTING}{91}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.11.1\hfil }Graceful degradation:}{91}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.11.2\hfil }Testing methodology:}{91}{}%
+\contentsline {section}{\hbox to\@tempdima {5.12\hfil }REAL-TIME WEB PERFORMANCE}{91}{}%
+\contentsline {section}{\hbox to\@tempdima {5.13\hfil }INFORMAL USABILITY PILOT}{92}{}%
+\contentsline {section}{\hbox to\@tempdima {5.14\hfil }EDUCATION MODULE: BILINGUAL SIGN-LANGUAGE LEARNING}{94}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.14.1\hfil }Overview and layout:}{94}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.14.2\hfil }Motivation: from hand-authored keyframes to motion capture:}{95}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.14.3\hfil }Content pipeline: dictionary signs from sign.mt:}{96}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.14.4\hfil }Server-side animation stitching (\texttt {pose\_concat.py}):}{96}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.14.5\hfil }Sign Viewer:}{97}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.14.6\hfil }Sentence Builder --- free-text signing:}{99}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.14.7\hfil }Arabic support (ArSL):}{101}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.14.8\hfil }Content verification --- defeating the silent fallback:}{102}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.14.9\hfil }Practice mode --- learn by doing:}{103}{}%
+\contentsline {subsection}{\hbox to\@tempdima {5.14.10\hfil }Performance and verification engineering:}{104}{}%
+\contentsline {chapter}{\textbf {6 \hskip 1em\relax RESULTS AND EVALUATION}}{108}{}%
+\contentsline {section}{\hbox to\@tempdima {6.0\hfil }TRAINING CONDITIONS AND EXPERIMENTAL CHALLENGES}{108}{}%
+\contentsline {section}{\hbox to\@tempdima {6.1\hfil }LETTER RECOGNITION RESULTS}{110}{}%
+\contentsline {subsection}{\hbox to\@tempdima {6.1.1\hfil }ASL Letter MLP:}{110}{}%
+\contentsline {subsection}{\hbox to\@tempdima {6.1.2\hfil }ArSL Letter MLP:}{111}{}%
+\contentsline {section}{\hbox to\@tempdima {6.2\hfil }WORD RECOGNITION RESULTS}{113}{}%
+\contentsline {subsection}{\hbox to\@tempdima {6.2.1\hfil }ASL Word Inception I3D (deployed):}{113}{}%
+\contentsline {subsection}{\hbox to\@tempdima {6.2.2\hfil }ArSL Word Stacked BiLSTM (deployed):}{114}{}%
+\contentsline {subsection}{\hbox to\@tempdima {6.2.3\hfil }Metrics source inventory}{118}{}%
+\contentsline {section}{\hbox to\@tempdima {6.3\hfil }COMPARATIVE ANALYSIS}{119}{}%
+\contentsline {section}{\hbox to\@tempdima {6.4\hfil }ABLATION AND DESIGN STUDIES}{120}{}%
+\contentsline {section}{\hbox to\@tempdima {6.5\hfil }ERROR ANALYSIS}{121}{}%
+\contentsline {section}{\hbox to\@tempdima {6.6\hfil }USABILITY EVALUATION}{122}{}%
+\contentsline {chapter}{\textbf {7 \hskip 1em\relax DISCUSSION}}{123}{}%
+\contentsline {section}{\hbox to\@tempdima {7.1\hfil }INTERPRETATION OF RESULTS}{123}{}%
+\contentsline {section}{\hbox to\@tempdima {7.2\hfil }STRENGTHS OF THE APPROACH}{124}{}%
+\contentsline {section}{\hbox to\@tempdima {7.3\hfil }LIMITATIONS AND FAILURE CASES}{124}{}%
+\contentsline {section}{\hbox to\@tempdima {7.4\hfil }COMPARISON WITH EXISTING WORK}{128}{}%
+\contentsline {section}{\hbox to\@tempdima {7.5\hfil }ENGINEERING TRADE-OFFS REVISITED}{128}{}%
+\contentsline {section}{\hbox to\@tempdima {7.6\hfil }ETHICAL AND SOCIAL CONSIDERATIONS}{129}{}%
+\contentsline {chapter}{\textbf {8 \hskip 1em\relax CONCLUSION}}{130}{}%
+\contentsline {section}{\hbox to\@tempdima {8.1\hfil }SUMMARY OF ACHIEVEMENTS}{130}{}%
+\contentsline {section}{\hbox to\@tempdima {8.2\hfil }CONTRIBUTIONS}{131}{}%
+\contentsline {section}{\hbox to\@tempdima {8.3\hfil }PRACTICAL IMPACT}{131}{}%
+\contentsline {chapter}{\textbf {9 \hskip 1em\relax FUTURE WORK}}{132}{}%
+\contentsline {section}{\hbox to\@tempdima {9.1\hfil }CONTINUOUS SIGN-LANGUAGE RECOGNITION AND TRANSLATION}{132}{}%
+\contentsline {section}{\hbox to\@tempdima {9.2\hfil }EXPANDED ARABIC VOCABULARY AND DIALECT COVERAGE}{132}{}%
+\contentsline {section}{\hbox to\@tempdima {9.3\hfil }IMPROVED REAL-TIME ROBUSTNESS}{132}{}%
+\contentsline {section}{\hbox to\@tempdima {9.4\hfil }MOBILE AND EDGE DEPLOYMENT}{133}{}%
+\contentsline {section}{\hbox to\@tempdima {9.5\hfil }BIDIRECTIONAL COMMUNICATION}{133}{}%
+\contentsline {section}{\hbox to\@tempdima {9.6\hfil }FORMAL USER STUDIES AND COMMUNITY PARTNERSHIP}{133}{}%
+\contentsline {chapter}{\textbf {REFERENCES}}{134}{}%

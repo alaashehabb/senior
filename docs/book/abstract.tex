@@ -1,0 +1,15 @@
+\newpage
+\thispagestyle{plain} 
+
+\begin{center}
+    \Large \textbf{ABSTRACT}
+\end{center}
+\vspace{0.8cm}
+
+\normalsize
+
+\noindent Sign language recognition systems can reduce communication barriers between deaf and hard-of-hearing communities and hearing users, yet most practical tools cover only one language or one recognition level. This graduation project delivers \textbf{Eshara} (\arTxt{إشارة}), a bilingual \textbf{web application} for American Sign Language (ASL) and Arabic Sign Language (ArSL) that supports static letter finger-spelling and isolated-word recognition from a standard webcam.\par\vspace{0.45cm}
+
+\noindent The system follows a three-tier architecture: a \textbf{React} frontend, a \textbf{Node.js/Express} application layer for authentication and routing, and a \textbf{FastAPI} model-services layer for inference. Four standalone deep-learning models are trained with separate vocabularies: an ASL letter \textbf{MLP} over \textbf{78-D} engineered hand landmarks (\textbf{28} deployed classes), an ArSL letter \textbf{MLP} over \textbf{63-D} raw hand landmarks (32 classes), an ASL word \textbf{Inception I3D} model over \textbf{32-frame} \textbf{224$\times$224} RGB clips (100 WLASL glosses), and an ArSL word stacked \textbf{BiLSTM} over \textbf{225-D} normalised Holistic sequences (48 frames, 100 KArSL classes).\par\vspace{0.45cm}
+
+\noindent Under constrained compute and single-academic-year scope, verification combines held-out dataset evaluation, integration testing of the three-tier web stack, and browser latency measurement. Design constraints include limited GPU resources and compact landmark transmission instead of full video streams. ASL and ArSL letters and ASL words are active via \texttt{/predict}; ArSL words are offline-validated and pending web integration. Intended uses include assistive education and communication practice where only a browser and webcam are available.\par

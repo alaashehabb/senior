@@ -1,0 +1,66 @@
+\newpage
+% ==========================================
+%             CHAPTER EIGHT
+% ==========================================
+\thispagestyle{plain}
+
+\begin{center}
+    \vspace*{0.5cm}
+    {\large \textit{Chapter Eight}} \\[0.4cm]
+    {\Large \textbf{8 \quad CONCLUSION}}
+\end{center}
+\addcontentsline{toc}{chapter}{\textbf{8 \quad CONCLUSION}}
+\vspace{0.45in}
+
+\normalsize
+\startchapterfloats{8}
+
+\noindent This thesis set out to design, implement, and evaluate a bilingual sign-language recognition web system accessible from a standard browser and webcam. The following sections summarise achievements, contributions, and practical impact~\cite{rastgoo2021survey,zhang2020mediapipe}.\par\vspace{0.3cm}
+
+\noindent\textbf{8.1\quad SUMMARY OF ACHIEVEMENTS}\par
+\addcontentsline{toc}{section}{\numberline{8.1}SUMMARY OF ACHIEVEMENTS}
+\vspace{0.2cm}
+
+\noindent The project delivered \textbf{Eshara} (\arTxt{إشارة}), a web-based sign-language recognition system with four standalone deep-learning models:
+
+\begin{table}[H]
+\centering
+\caption{Graduation deliverables and headline results.}
+\label{tab:ch8-summary}
+\small
+\begin{tabular}{|l|c|c|c|}
+\hline
+\multicolumn{1}{|c|}{\textbf{Model}} & \multicolumn{1}{|c|}{\textbf{Task}} & \multicolumn{1}{|c|}{\textbf{Input}} & \multicolumn{1}{|c|}{\textbf{Test Top-1}}\\
+\hline
+ASL Letter MLP & 28 classes & 78-D $\times$ 1 & 99.06\,\% \\
+\hline
+ArSL Letter MLP & 32 letters & 63-D $\times$ 1 & 99.63\,\% \\
+\hline
+ASL Word I3D & 100 words & 224$\times$224 RGB $\times$ 32 & 65.89\,\% \\
+\hline
+ArSL Word BiLSTM & 100 words & 225-D $\times$ 48 & \textbf{99.62\,\%} \\
+\hline
+\end{tabular}
+\end{table}
+\vspace{0.2cm}
+
+\noindent The deployed ArSL word BiLSTM achieves \textbf{99.62\,\% Top-1} on 100 classes (SignID 71--170); the ASL word I3D reaches \textbf{65.89\,\%} Top-1 on the WLASL-100 benchmark. The web system is implemented as a React frontend, Node.js/Express application tier, and FastAPI model-services tier. In the current deployed web path, ASL/ArSL letters and ASL words are active through \texttt{/predict}, while ArSL words remain an offline-validated model awaiting full web wiring~\cite{fastapi,react,mediapipeweb}.\par\vspace{0.3cm}
+\clearpage
+\noindent\textbf{8.2\quad CONTRIBUTIONS}\par
+\addcontentsline{toc}{section}{\numberline{8.2}CONTRIBUTIONS}
+\vspace{0.2cm}
+
+\noindent Relative to Chapter~2 research gaps, this work contributes:
+\begin{enumerate}
+\item A \textbf{unified web architecture} serving four heterogeneous SLR models through one API.
+\item \textbf{Documented bilingual pipelines} for ASL and ArSL at letter and word granularity with reproducible artifacts and NPZ caches.
+\item A \textbf{reproducible 100-class ArSL word path} on KArSL (SignID 71--170) with confirmed 99.62\,\% Top-1 and audit artifacts.
+\item A \textbf{hybrid privacy-oriented inference pattern} --- landmarks for letters and ArSL words; encoded frame buffers for ASL I3D --- suitable for assistive communication in browser environments~\cite{rfc6455,zhang2020mediapipe}.
+\end{enumerate}
+\vspace{0.3cm}
+
+\noindent\textbf{8.3\quad PRACTICAL IMPACT}\par
+\addcontentsline{toc}{section}{\numberline{8.3}PRACTICAL IMPACT}
+\vspace{0.2cm}
+
+\noindent Eshara targets education (finger-spelling practice), assistive communication, and accessibility scenarios where a browser and webcam suffice --- without specialised hardware or app installation~\cite{who2024hearing,wcag22}. Pilot web measurements (as reported in Table~\ref{tab:ch7-latency}, Chapter~5) confirm letter-mode end-to-end latency of 51\,ms (p50), supporting the $\leq 200$\,ms hypothesis from Section~1.5.4. By open-sourcing evaluation artifacts and the web stack within the graduation repository, the project lowers the barrier for future ArSL research in the Arab region. The system is not production-certified for medical or legal interpretation; it demonstrates feasibility and provides a foundation for community-informed iteration~\cite{noor2024hybrid}.\par

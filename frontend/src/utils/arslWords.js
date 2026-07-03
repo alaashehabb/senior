@@ -10,14 +10,15 @@
 // verification compares the word's pose against the cloud's own spelling of
 // it — fetch the doubled word (guaranteed out-of-vocabulary → spelled) and
 // DTW-compare handshape sequences; see scratchpad classify2.py from the
-// July 2026 session, and the notes in fetch_signmt_pose.py. A word that
+// July 2026 sessions, and the notes in fetch_signmt_pose.py. A word that
 // just fingerspells must never be presented as a word sign.
 //
-// The jos dictionary keys many entries under proper Arabic orthography:
-// أم is a real sign while ام is spelled, آسف real while اسف spelled. Keys
-// below therefore keep hamza/madda forms and MUST match the .pose
-// filenames; lookups fold both sides (server pose_concat.AR_FOLD, client
-// poseViewer.foldWord) so users can still type bare spellings.
+// The jos dictionary keys many entries under proper Arabic orthography
+// (أم real / ام spelled) and many nouns under their DEFINITE form
+// (القلب real / قلب spelled). Keys below therefore keep hamza/madda and
+// ال forms and MUST match the .pose filenames; lookups fold both sides
+// and also try an ال-stripped alias (server pose_concat._fold_index,
+// client poseViewer.hasPose) so users can type bare spellings.
 //
 // `description` is the ENGLISH gloss (the app's UI language), shown under
 // the Arabic word label.
@@ -26,6 +27,10 @@ export const AR_WORD_CATEGORIES = [
   { id: "core", label: "كلمات يومية" },
   { id: "people", label: "الناس" },
   { id: "feelings", label: "مشاعر وصفات" },
+  { id: "body", label: "الجسم" },
+  { id: "animals", label: "حيوانات" },
+  { id: "places", label: "أماكن وطبيعة" },
+  { id: "school", label: "مدرسة وعمل" },
   { id: "time", label: "الوقت" },
   { id: "food", label: "طعام وشراب" },
 ];
@@ -38,18 +43,38 @@ export const AR_WORDS = {
   "فهم": { category: "core", description: "Understand" },
   "خطأ": { category: "core", description: "Wrong / mistake" },
   "إشارة": { category: "core", description: "Sign / signal" },
+  "جلس": { category: "core", description: "Sit" },
+  "اليسار": { category: "core", description: "Left (direction)" },
 
   "أنا": { category: "people", description: "I / me" },
   "أم": { category: "people", description: "Mother" },
   "جد": { category: "people", description: "Grandfather" },
   "امرأة": { category: "people", description: "Woman" },
   "أسرة": { category: "people", description: "Family" },
+  "الطبيب": { category: "people", description: "Doctor" },
 
   "حب": { category: "feelings", description: "Love" },
   "خائف": { category: "feelings", description: "Afraid" },
   "جميل": { category: "feelings", description: "Beautiful" },
   "حلو": { category: "feelings", description: "Sweet / nice" },
   "جديد": { category: "feelings", description: "New" },
+  "أزرق": { category: "feelings", description: "Blue" },
+
+  "الرأس": { category: "body", description: "Head" },
+  "القلب": { category: "body", description: "Heart" },
+  "أذن": { category: "body", description: "Ear" },
+
+  "حصان": { category: "animals", description: "Horse" },
+  "أسد": { category: "animals", description: "Lion" },
+
+  "جبل": { category: "places", description: "Mountain" },
+  "ثلج": { category: "places", description: "Snow / ice" },
+  "السوق": { category: "places", description: "Market" },
+  "الباب": { category: "places", description: "Door" },
+  "حمام": { category: "places", description: "Bathroom" },
+
+  "امتحان": { category: "school", description: "Exam" },
+  "العمل": { category: "school", description: "Work" },
 
   "اليوم": { category: "time", description: "Today" },
   "أمس": { category: "time", description: "Yesterday" },
@@ -58,12 +83,10 @@ export const AR_WORDS = {
 
   "خبز": { category: "food", description: "Bread" },
   "حليب": { category: "food", description: "Milk" },
+  "جبن": { category: "food", description: "Cheese" },
+  "أرز": { category: "food", description: "Rice" },
+  "السكر": { category: "food", description: "Sugar" },
 };
-
-// No numbers category: the jos dictionary only has 2/3/4 (1 and 5 are
-// absent — every spelling variant spells or 500s), too sparse for a tab.
-// The اثنان/ثلاثة/اربعة pose files stay installed so the Sentence Builder
-// still signs typed digits (٢ ٣ ٤) via the server's DIGIT_WORDS mapping.
 
 // 28 base letters, in alphabetical order, for the Fingerspelling tab.
 export const AR_ALPHABET = "ا ب ت ث ج ح خ د ذ ر ز س ش ص ض ط ظ ع غ ف ق ك ل م ن ه و ي".split(" ");

@@ -1,0 +1,107 @@
+\newpage
+% ==========================================
+%              CHAPTER SEVEN
+% ==========================================
+\thispagestyle{plain}
+
+\begin{center}
+    \vspace*{0.5cm}
+    {\large \textit{Chapter Seven}} \\[0.4cm]
+    {\Large \textbf{7 \quad DISCUSSION}}
+\end{center}
+\addcontentsline{toc}{chapter}{\textbf{7 \quad DISCUSSION}}
+\vspace{0.45in}
+
+\normalsize
+\startchapterfloats{7}
+
+\noindent Chapter~6 presented empirical results; this chapter interprets them against the literature (Chapter~2), methodology (Chapters~3 and~4), and project objectives (Chapter~1). The discussion addresses what worked, what failed, how Eshara compares to prior work, and the ethical context of assistive SLR~\cite{rastgoo2021survey,adaloglou2022comprehensive}.\par\vspace{0.3cm}
+
+\noindent\textbf{7.1\quad INTERPRETATION OF RESULTS}\par
+\addcontentsline{toc}{section}{\numberline{7.1}INTERPRETATION OF RESULTS}
+\vspace{0.2cm}
+
+\noindent\textbf{ArSL graduation words (99.62\,\% Top-1).} The deployed stacked BiLSTM achieves 99.62\,\% Top-1 on 100 Arabic word classes (SignID 71--170) using 225-D nose/wrist-normalised Holistic landmarks over 48 frames, with 99.72\,\% peak validation accuracy. This supports the design choice to use body-relative pose+hands features rather than hands-only 63-D vectors, which proved insufficient in v2 experiments for Arabic word motion~\cite{sidig2021karsl,luqman2022cascaded}. The compact $\sim$255\,K-parameter architecture generalises reliably on $\sim$50 clips per class without the compute cost of a pixel-based 3-D CNN~\cite{hochreiter1997long}.\par\vspace{0.2cm}
+
+\noindent\textbf{Letter models ($>$99\,\% Top-1).} Static MLPs on hand landmarks perform near ceiling on the full letter corpora: ASL engineered 78-D features reach \textbf{99.06\,\%} Top-1 (12\,401 test samples); ArSL 63-D raw landmarks reach \textbf{99.63\,\%} Top-1 re-evaluated (14\,734 test samples, 512/256/64 head). Motion letters (J, Z) remain live weak points because single-frame landmarks discard trajectory~\cite{akash2019aslalphabet,arthur2018arasl2018}.\par\vspace{0.2cm}
+
+\noindent\textbf{ASL words (deployed I3D).} The pretrained \texttt{asl\_word\_i3d.pt} Inception I3D integrates spatio-temporal RGB modelling without manual landmark engineering, trading higher server compute ($\sim$12.5\,M parameters) for strong WLASL coverage within graduation GPU limits. On the WLASL-100 benchmark protocol (258 test clips) it reaches \textbf{65.89\,\%} Top-1 / 84.11\,\% Top-5 (as reported in Table~\ref{tab:ch5-asl-word}, Chapter~6) --- well below the $>$99\,\% seen for landmark-based letters and ArSL words, underscoring how much harder appearance-based recognition is when signer, background, and lighting variance are not factored out by a pose estimator~\cite{li2020wlasl}.\par\vspace{0.3cm}
+\clearpage
+\noindent\textbf{7.2\quad STRENGTHS OF THE APPROACH}\par
+\addcontentsline{toc}{section}{\numberline{7.2}STRENGTHS OF THE APPROACH}
+\vspace{0.2cm}
+
+\noindent Four strengths distinguish Eshara from typical monolingual, single-granularity SLR papers~\cite{rastgoo2021survey}:
+\begin{enumerate}
+\item \textbf{Structural bilingual coverage} --- ASL and ArSL, letters and words, in one web product (as surveyed in Table~\ref{tab:related-systems}, Chapter~2).
+\item \textbf{Hybrid input design} --- landmarks for letters and ArSL words; encoded RGB clips for ASL I3D~\cite{zhang2020mediapipe,li2020wlasl}.
+\item \textbf{Reproducible artifact workflow} --- NPZ caches and exported metrics CSVs.
+\item \textbf{Honest evaluation} --- official KArSL three-signer partition for ArSL words; signer-only holdout baselines (35--64\,\%) contextualise cross-signer difficulty; explicit separation of deployed vs.\ superseded experimental models.
+\end{enumerate}
+\vspace{0.3cm}
+
+\noindent\textbf{7.3\quad LIMITATIONS AND FAILURE CASES}\par
+\addcontentsline{toc}{section}{\numberline{7.3}LIMITATIONS AND FAILURE CASES}
+\vspace{0.2cm}
+
+\noindent\textbf{Data limitations.} KArSL graduation averages $\sim$50 samples per class --- far below ASL Alphabet's $\sim$3\,000 images per letter. WLASL subset classes vary from abundant to fewer than ten clips. Signer diversity is limited to corpus performers; dialect variation across the Arab world is not fully represented~\cite{sidig2021karsl,li2020wlasl}.\par\vspace{0.2cm}
+
+\noindent\textbf{Vision limitations.} MediaPipe degrades under poor lighting, motion blur, occlusion, and camera distance beyond $\sim$1.5\,m. Missing landmarks propagate as zeros, which can confuse word models~\cite{zhang2020mediapipe,mediapipeweb}. \textbf{Webcam capture quality} was a dominant source of prediction instability during development: consumer laptop cameras introduced rolling shutter blur, auto-exposure shifts, and cluttered backgrounds (posters, furniture) absent from ASL Alphabet and ArASL2018 studio photographs. Several early training passes --- especially pixel-based MobileNet letter models and long KArSL extraction jobs --- were discarded after live trials showed flickering labels and class confusion that offline test accuracy did not predict (as recorded in Table~\ref{tab:ch5-training-challenges}, Chapter~6). The final landmark-first design and stabilisation decoders (Chapters~3 and~4) directly respond to these camera-domain failures.\par\vspace{0.2cm}
+
+\noindent\textbf{Scope limitations.} Isolated signs only --- no continuous sentence translation, no coarticulation modelling, no multi-signer scenes. Web-only --- no offline mobile inference in graduation scope~\cite{duarte2021how2sign}.\par\vspace{0.2cm}
+
+\noindent\textbf{Compute limitations.} 4\,GB local GPU constrained batch size, architecture search, and full 502-class KArSL training. Transformer-scale models were trialled but not deployed~\cite{vaswani2017attention}.\par\vspace{0.2cm}
+
+\noindent\textbf{Letter recognition: deployment drawbacks.} Despite $>$99\,\% offline Top-1, letter mode has predictable failure modes in live use. \textbf{Motion letters} (ASL J and Z) require trajectory across frames; a single-frame MLP sees only one pose and cannot distinguish the stroke direction, so live accuracy on these classes lags static letters even when the offline test set is dominated by still images~\cite{akash2019aslalphabet}. \textbf{Visually similar pairs} --- especially in ArASL2018 (\arTxt{ف}/\arTxt{ق}, \arTxt{ح}/\arTxt{خ}) --- produce the few off-diagonal errors as shown in Figures~\ref{fig:ch5-asl-letter-cm} and~\ref{fig:ch5-arsl-letter-cm}; the wider ArSL MLP head (512/256/64) was required partly for this reason. \textbf{MediaPipe fragility} affects letters first: missing hand detections yield zero-filled vectors that the MLP may misclassify; the web stabilisation decoder (10-frame buffer, 7/10 majority vote, 0.8\,s hold) reduces flicker but cannot recover from sustained occlusion or out-of-frame hands~\cite{zhang2020mediapipe,mediapipeweb}. \textbf{Offline--live gap:} studio datasets (ASL Alphabet, ArASL2018) use curated photographs with consistent backgrounds; webcam capture introduces lighting, distance, and motion blur not fully represented in training, so deployment stabilisation is tuned separately from the offline test split.\par\vspace{0.2cm}
+
+\noindent\textbf{Letter experiments that were not deployed.} Early work explored pixel-based \textbf{MobileNetV2} classifiers on raw letter images. These models trained on dataset photographs but \textbf{did not generalise reliably to live webcam frames}: background, skin-tone, and lighting in user capture differed from the studio distribution, and maintaining a second pixel pipeline alongside MediaPipe would have doubled client complexity. \textbf{Unengineered 63-D ASL landmarks} (wrist-relative coordinates only, without the 15 joint-angle features) also underperformed the final 78-D engineered path; angle triplets encode finger configuration that raw $(x,y,z)$ tuples alone do not separate. \textbf{Per-frame BiLSTM on letters} was considered (Table~\ref{tab:ch3-tradeoffs}) and rejected: finger-spelling at letter granularity has no meaningful temporal structure within a single committed character, and sequence models would add latency without accuracy gain.\par\vspace{0.2cm}
+
+\noindent The deployed letter stack is therefore MediaPipe Hands $\rightarrow$ language-specific MLP $\rightarrow$ majority-vote stabilisation, documented in Chapter~3.\par\vspace{0.2cm}
+
+
+
+\noindent\textbf{Word recognition: deployment drawbacks.} Word models introduce temporal windows, signer variation, and vocabulary sparsity that letters avoid. \textbf{ASL I3D} at 65.89\,\% Top-1 (WLASL-100 benchmark) reflects the difficulty of appearance-based word recognition: the model must absorb signer identity, clothing, and background jointly with gesture motion~\cite{li2020wlasl}. Top-5 at 84.11\,\% shows the correct gloss is often in the short-list, but the web UI commits only Top-1, so users experience full errors on roughly one third of signs under benchmark conditions. The fixed \textbf{32-frame buffer} may truncate slow signs or include idle frames at the start of a clip, affecting live commits (Chapter~4, Section~4.5). \textbf{ArSL words} achieve 99.62\,\% Top-1 on the official three-signer KArSL test partition but \textbf{signer-only holdout} experiments in the training report drop to 35\,\% (train one signer, test two) and 64\,\% (train two, test one) --- evidence that cross-signer generalisation is substantially harder than the headline three-signer split suggests~\cite{johnson2019signer,sidig2021karsl}. \textbf{Holistic dropout} (pose or hands intermittently missing) propagates zeros through the 48-frame BiLSTM; the hand-present gate mitigates empty inference but not partial landmarks. \textbf{Vocabulary scope} is fixed at 100 classes per language; out-of-vocabulary signs, fingerspelled words, and regional dialect variants are silently misclassified.\par\vspace{0.2cm}
+
+\noindent\textbf{Superseded word-model branches and why they were not deployed.} The following table records the main experimental lineage; only the KArSL deployment bundle path (checkpoint \texttt{arsl\_word\_bilstm.h5}) ships in Eshara. Several branches were abandoned for concrete, reproducible reasons rather than poor engineering alone.\par\vspace{0.3cm}
+
+\begin{table}[H]
+\centering
+\caption{Superseded word-recognition experiment branches (not deployed in Eshara).}
+\label{tab:ch6-superseded}
+\small
+\renewcommand{\arraystretch}{2.5} % Adds vertical padding
+\begin{tabular}{|P{4.0cm}|P{3.0cm}|P{2.5cm}|P{5.5cm}|}
+\hline
+\textbf{Experiment branch / path} & \textbf{Architecture} & \textbf{Outcome} & \textbf{Why not deployed} \\ \hline
+ArSL v2 extraction branch & BiLSTM; 258-D raw Holistic & Partial 502-class extraction; long Kaggle runs & Full-corpus NPZ build exceeded local 4\,GB GPU; incomplete class coverage \\ \hline
+ArSL custom 131-class branch & BiLSTM + MHA; 258-D; 131 classes & 96.64\,\% Top-1; 96.66\,\% macro-F1 (block holdout, $N{=}1\,189$) & Different vocabulary and feature space; no matching web checkpoint \\ \hline
+ArSL custom live-test branch & 131-class custom checkpoint & Useful diagnostics & Bound to superseded 131-class model; replaced by deployment-bundle protocol \\ \hline
+ASL landmark branch & BiLSTM / Transformer on 462-D Holistic & Offline experiments only & Landmark word models on WLASL did not match pretrained I3D accuracy within GPU budget \\ \hline
+ASL transformer prototype & Transformer temporal encoder & Prototype & Parameter count and data hunger ($\sim$10--50 clips/class) unsuitable for 4\,GB training \\ \hline
+Continuous-sign branch & CSLR sequence models & Out of scope & Continuous recognition deferred to Chapter~9; not isolated-word deliverable \\ \hline
+Third-party demo branch & 112-word reference app & Reference only & Third-party vocabulary/recipe; not KArSL 100-class graduation selection \\ \hline
+\end{tabular}
+\end{table}
+
+\noindent The \textbf{deployed ArSL word model} comes from the KArSL BiLSTM training pipeline packaged as the graduation deployment bundle: 100 classes (SignID 71--170), 225-D nose/wrist-normalised Holistic sequences, 48 frames, stacked BiLSTM ($\sim$255\,K parameters), and \texttt{arsl\_word\_bilstm.h5} with 99.62\,\% Top-1 on $N{=}2\,400$ official test sequences. This path was chosen because it (i)~matches the KArSL medical-word subset used in the graduation web UI and (ii)~achieves higher held-out reliability than the custom 131-class experiment under comparable deployment constraints. The \textbf{deployed ASL word model} is the released WLASL-100 Inception I3D checkpoint (\texttt{asl\_word\_i3d.pt}): training a comparable landmark BiLSTM from scratch on WLASL would have consumed weeks of Kaggle GPU time for uncertain gain over the published RGB baseline, and keeping RGB inference server-side matches the hybrid privacy pattern (encoded frames, not raw landmark upload) described in Chapter~4.\par\vspace{0.3cm}
+
+\noindent\textbf{7.4\quad COMPARISON WITH EXISTING WORK}\par
+\addcontentsline{toc}{section}{\numberline{7.4}COMPARISON WITH EXISTING WORK}
+\vspace{0.2cm}
+
+\noindent As identified in Table~\ref{tab:research-gap} (Chapter~2), the literature review highlighted gaps in ArSL coverage, letter+word granularity, and deployable web interfaces. Eshara addresses each structurally. Numeric comparison to Luqman and El-Alfy's $>$99\,\% on KArSL subsets~\cite{luqman2022cascaded} or Dabwan's 95\,\% on 28 classes~\cite{dabwan2023cnnlstm} is \textbf{not} direct: different vocabularies, features (RGB vs.\ landmarks), and splits. Eshara's contribution is the \textbf{integrated bilingual web system} with confirmed 99.62\,\% Top-1 on 100 ArSL word classes, not a claim of beating all published ArSL benchmarks.\par\vspace{0.3cm}
+
+\noindent\textbf{7.5\quad ENGINEERING TRADE-OFFS REVISITED}\par
+\addcontentsline{toc}{section}{\numberline{7.5}ENGINEERING TRADE-OFFS REVISITED}
+\vspace{0.2cm}
+
+\noindent A hybrid input design trades uniform landmark-only processing for task-matched representations: letters and ArSL words use compact landmark vectors ($>$99\,\% letters; 99.62\,\% ArSL words), while ASL words use a pretrained I3D on RGB clips. Stacked BiLSTM traded transformer capacity for trainability on graduation hardware (as recorded in Tables~\ref{tab:ch3-tradeoffs}, \ref{tab:ch4-tradeoffs-asl}, and~\ref{tab:ch4-tradeoffs-arsl}). The 100-class KArSL word subset (SignID 71--170) traded lexical coverage for reliable per-class accuracy --- a pragmatic graduation scope decision aligned with KArSL sample density~\cite{sandler2018mobilenetv2,hochreiter1997long,sidig2021karsl}.\par\vspace{0.3cm}
+
+\clearpage
+\noindent\textbf{7.6\quad ETHICAL AND SOCIAL CONSIDERATIONS}\par
+\addcontentsline{toc}{section}{\numberline{7.6}ETHICAL AND SOCIAL CONSIDERATIONS}
+\vspace{0.2cm}
+
+\noindent Assistive SLR must be developed with deaf-community input, transparent limitation statements, and consent for any future video collection~\cite{who2024hearing}. Transmitting landmarks rather than video reduces surveillance risk but does not eliminate bias if training corpora under-represent certain signers, skin tones, or regional dialects~\cite{johnson2019signer,wcag22}. Eshara is positioned as an \textbf{assistive educational tool}, not a replacement for human interpreters or professional translation services. Web delivery via WCAG-aware React supports broader access without app-store barriers~\cite{wcag22}.\par\vspace{0.2cm}
+
+\noindent\textbf{Chapter summary.} Chapter~7 interpreted Chapter~6 results in context: landmark-based letters and ArSL words exceed 99\,\% Top-1 under corpus splits, while ASL I3D reflects the harder RGB word task (65.89\,\%). Strengths include bilingual structural coverage and honest split reporting; limitations span data sparsity, MediaPipe fragility, isolated-sign scope, and local GPU constraints. Letter drawbacks (motion J/Z, similar Arabic pairs, offline--live domain gap) and superseded experiment branches (MobileNet pixels, 131-class custom ArSL, WLASL landmark BiLSTMs) explain why the deployed four-model stack as recorded in Table~\ref{tab:ch6-superseded} was chosen. Ethical positioning treats Eshara as assistive education, not certified interpretation.\par

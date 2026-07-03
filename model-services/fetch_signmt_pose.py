@@ -68,11 +68,17 @@ EDUCATION_WORDS_EN = [
 # containing ة: their fingerspelling lexicon has no ة, so OOV ة-words
 # return HTTP 500 — a 200 for a ة-word IS a real sign.
 EDUCATION_WORDS_AR = [
-    "لا", "اسم", "مع السلامة", "آسف", "فهم", "خطأ", "إشارة",
-    "أنا", "أم", "جد", "امرأة", "أسرة",
-    "حب", "خائف", "جميل", "حلو", "جديد",
+    "لا", "اسم", "مع السلامة", "آسف", "فهم", "خطأ", "إشارة", "جلس", "اليسار",
+    "أنا", "أم", "جد", "امرأة", "أسرة", "الطبيب",
+    "حب", "خائف", "جميل", "حلو", "جديد", "أزرق",
+    "الرأس", "القلب", "أذن",
+    "حصان", "أسد",
+    "جبل", "ثلج", "السوق", "الباب", "حمام",
+    "امتحان", "العمل",
     "اليوم", "أمس", "الآن", "دقيقة",
-    "خبز", "حليب",
+    "خبز", "حليب", "جبن", "أرز", "السكر",
+    # NOTE the definite-article pattern: many jos nouns are ONLY real under
+    # their ال form (القلب real, قلب spelled) — always probe both forms.
     # Numbers (Sentence Builder digits only — no UI category; 1 and 5 are
     # ABSENT from jos, all variants spell or 500):
     "ثلاثة",

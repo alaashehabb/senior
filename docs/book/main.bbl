@@ -1,0 +1,252 @@
+\begin{thebibliography}{10}
+
+\bibitem{who2024hearing}
+{World Health Organization}, ``Deafness and hearing loss --- fact sheet.'' \url{https://www.who.int/news-room/fact-sheets/detail/deafness-and-hearing-loss}, 2024.
+
+\bibitem{rastgoo2021survey}
+R.~Rastgoo, K.~Kiani, and S.~Escalera, ``Sign language recognition: A deep survey,'' {\em Expert Syst. Appl.}, vol.~164, p.~113794, 2021.
+
+\bibitem{adaloglou2022comprehensive}
+N.~M. Adaloglou, T.~Stergioulas, M.~Papachristou, E.~Papadopoulos, K.~Apostolakis, D.~Zarpalas, and P.~Daras, ``A comprehensive study on deep learning-based methods for sign language recognition,'' {\em IEEE Trans. Multimedia}, vol.~24, pp.~1750--1762, 2022.
+
+\bibitem{zhang2020mediapipe}
+F.~Zhang, V.~Bazarevsky, A.~Vakunov, A.~Tkachenka, G.~Sung, C.-L. Chang, and M.~Grundmann, ``{MediaPipe} hands: On-device real-time hand tracking,'' {\em arXiv:2006.10214}, 2020.
+
+\bibitem{mediapipeweb}
+{Google MediaPipe Team}, ``{MediaPipe} for web.'' \url{https://developers.google.com/mediapipe}, 2024.
+
+\bibitem{li2020wlasl}
+D.~Li, C.~Rodriguez, X.~Yu, and H.~Li, ``Word-level deep sign language recognition from video: A new large-scale dataset and methods comparison,'' in {\em Proc. IEEE Winter Conf. on Applications of Computer Vision (WACV)}, 2020.
+
+\bibitem{sidig2021karsl}
+A.~A.~I. Sidig, H.~Luqman, S.~Mahmoud, and M.~Mohandes, ``{KArSL}: Arabic sign language database,'' {\em ACM Trans. Asian Low-Resource Lang. Inf. Process.}, vol.~20, no.~1, pp.~1--19, 2021.
+
+\bibitem{akash2019aslalphabet}
+A.~Nagpal, ``{ASL} alphabet dataset.'' \url{https://www.kaggle.com/datasets/grassknoted/asl-alphabet}, 2019.
+
+\bibitem{arthur2018arasl2018}
+D.~Arthur, A.~Othman, and R.~Al-Rousan, ``{ArASL2018}: A new benchmark for {Arabic} sign language recognition,'' in {\em Proc. Int. Conf. on Computer and Applications (ICCA)}, 2018.
+
+\bibitem{camgoz2018neural}
+N.~C. Cam{g{\"o}}z, S.~Hadfield, O.~Koller, H.~Ney, and R.~Bowden, ``Neural sign language translation,'' in {\em Proc. IEEE Conf. on Computer Vision and Pattern Recognition (CVPR)}, 2018.
+
+\bibitem{koller2020weakly}
+O.~Koller, N.~C. Camgoz, H.~Ney, and R.~Bowden, ``Weakly supervised learning with multi-stream {CNN}-{LSTM}-{HMM}s to discover sequential parallelism in sign language videos,'' {\em IEEE Trans. Pattern Anal. Mach. Intell.}, 2020.
+
+\bibitem{duarte2021how2sign}
+A.~Duarte, S.~Palaskar, L.~Ventura, D.~Ghadiyaram, K.~DeHaan, F.~Metze, J.~Torres, and X.~Giro-i Nieto, ``{How2Sign}: A large-scale multimodal dataset for continuous american sign language,'' in {\em Proc. IEEE Conf. on Computer Vision and Pattern Recognition (CVPR)}, 2021.
+
+\bibitem{sterpu2018sign}
+N.~Sterpu, A.~Saeed, and F.~Dufaux, ``Sign language recognition: A survey of techniques and datasets,'' {\em arXiv:1807.03635}, 2018.
+
+\bibitem{starner1998realtime}
+T.~Starner, J.~Weaver, and A.~Pentland, ``Real-time {American Sign Language} recognition using desk and wearable computer based video,'' in {\em Proc. IEEE Int. Symp. on Wearable Computers}, 1998.
+
+\bibitem{rabiner1989tutorial}
+L.~R. Rabiner, ``A tutorial on hidden {Markov} models and selected applications in speech recognition,'' {\em Proc. IEEE}, vol.~77, no.~2, pp.~257--286, 1989.
+
+\bibitem{koller2015continuous}
+O.~Koller, H.~Ney, and R.~Bowden, ``Deep hand: How to train a {CNN} on 1 million hand images when your data is continuous and weakly labelled,'' in {\em Proc. IEEE Conf. on Computer Vision and Pattern Recognition (CVPR)}, 2015.
+
+\bibitem{koller2016continuous}
+O.~Koller, S.~Zargaran, H.~Ney, and R.~Bowden, ``Deep sign: Enabling robust statistical continuous sign language recognition via hybrid {CNN-HMM}s,'' in {\em Proc. IEEE Int. Conf. on Computer Vision Workshops (ICCVW)}, 2016.
+
+\bibitem{he2016deep}
+K.~He, X.~Zhang, S.~Ren, and J.~Sun, ``Deep residual learning for image recognition,'' in {\em Proc. IEEE Conf. on Computer Vision and Pattern Recognition (CVPR)}, 2016.
+
+\bibitem{pigou2018sign}
+L.~Pigou, P.-J. Diehl, P.-J. Kindermans, B.~Schrauwen, and L.~Van Der~Maaten, ``Beyond temporal pooling: Recurrence and temporal convolutions for gesture recognition in video,'' {\em Int. J. Comput. Vis.}, vol.~126, no.~12, pp.~1368--1392, 2018.
+
+\bibitem{forster2014rwth}
+J.~Forster, O.~Koller, H.~Ney, and R.~Bowden, ``{RWTH-PHOENIX-Weather}: A large vocabulary sign language recognition and translation corpus,'' in {\em Proc. Int. Conf. on Language Resources and Evaluation (LREC)}, 2014.
+
+\bibitem{cao2019openpose}
+Z.~Cao, G.~Hidalgo, T.~Simon, S.-E. Wei, and Y.~Sheikh, ``{OpenPose}: Real-time multi-person 2{D} pose estimation,'' {\em IEEE Trans. Pattern Anal. Mach. Intell.}, vol.~43, no.~1, pp.~172--186, 2019.
+
+\bibitem{bazarevsky2020blazepose}
+V.~Bazarevsky, I.~Grishchenko, K.~Raveendran, T.~Zhu, F.~Zhang, and M.~Grundmann, ``{BlazePose}: On-device real-time body pose tracking,'' {\em arXiv:2006.10204}, 2020.
+
+\bibitem{sandler2018mobilenetv2}
+M.~Sandler, A.~Howard, M.~Zhu, A.~Zhmoginov, and L.-C. Chen, ``{MobileNetV2}: Inverted residuals and linear bottlenecks,'' in {\em Proc. IEEE Conf. on Computer Vision and Pattern Recognition (CVPR)}, 2018.
+
+\bibitem{vaswani2017attention}
+A.~Vaswani, N.~Shazeer, N.~Parmar, J.~Uszkoreit, L.~Jones, A.~N. Gomez, {\L}.~Kaiser, and I.~Polosukhin, ``Attention is all you need,'' in {\em Advances in Neural Information Processing Systems (NeurIPS)}, 2017.
+
+\bibitem{szegedy2016rethinking}
+C.~Szegedy, V.~Vanhoucke, S.~Ioffe, J.~Shlens, and Z.~Wojna, ``Rethinking the {Inception} architecture for computer vision,'' in {\em Proc. IEEE Conf. on Computer Vision and Pattern Recognition (CVPR)}, 2016.
+
+\bibitem{ioffe2015batchnorm}
+S.~Ioffe and C.~Szegedy, ``Batch normalization: Accelerating deep network training by reducing internal covariate shift,'' in {\em Proc. International Conf. on Machine Learning (ICML)}, 2015.
+
+\bibitem{srivastava2014dropout}
+N.~Srivastava, G.~Hinton, A.~Krizhevsky, I.~Sutskever, and R.~Salakhutdinov, ``Dropout: A simple way to prevent neural networks from overfitting,'' {\em Journal of Machine Learning Research}, vol.~15, pp.~1929--1958, 2014.
+
+\bibitem{hochreiter1997long}
+S.~Hochreiter and J.~Schmidhuber, ``Long short-term memory,'' {\em Neural Computation}, vol.~9, no.~8, pp.~1735--1780, 1997.
+
+\bibitem{pascanu2013difficulty}
+R.~Pascanu, T.~Mikolov, and Y.~Bengio, ``On the difficulty of training recurrent neural networks,'' in {\em Proc. International Conf. on Machine Learning (ICML)}, 2013.
+
+\bibitem{schuster1997bidirectional}
+M.~Schuster and K.~K. Paliwal, ``Bidirectional recurrent neural networks,'' {\em IEEE Trans. Signal Process.}, vol.~45, no.~11, pp.~2673--2681, 1997.
+
+\bibitem{bahdanau2015neural}
+D.~Bahdanau, K.~Cho, and Y.~Bengio, ``Neural machine translation by jointly learning to align and translate,'' in {\em Proc. International Conf. on Learning Representations (ICLR)}, 2015.
+
+\bibitem{kingma2015adam}
+D.~P. Kingma and J.~Ba, ``{Adam}: A method for stochastic optimization,'' in {\em Proc. International Conf. on Learning Representations (ICLR)}, 2015.
+
+\bibitem{deng2024skeleton}
+Z.~Deng, Y.~Leng, J.~Chen, X.~Yu, Y.~Zhang, and Q.~Gao, ``{TMS-Net}: A multi-feature multi-stream multi-level information sharing network for skeleton-based sign language recognition,'' {\em Neurocomputing}, vol.~572, p.~127194, 2024.
+
+\bibitem{perez2017augmentation}
+L.~P{\'e}rez and J.~Wang, ``The effectiveness of data augmentation in image classification using deep learning,'' in {\em Stanford CS231n Course Project}, 2017.
+
+\bibitem{howard2017mobilenets}
+A.~G. Howard, M.~Zhu, B.~Chen, D.~Kalenichenko, W.~Wang, T.~Weyand, M.~Andreetto, and H.~Adam, ``{MobileNets}: Efficient convolutional neural networks for mobile vision applications,'' {\em arXiv:1704.04861}, 2017.
+
+\bibitem{tan2019efficientnet}
+M.~Tan and Q.~V. Le, ``{EfficientNet}: Rethinking model scaling for convolutional neural networks,'' in {\em Proc. International Conf. on Machine Learning (ICML)}, 2019.
+
+\bibitem{huang2018attention}
+J.~Huang, W.~Zhou, H.~Zhang, H.~Li, and W.~Li, ``Attention-based 3{D-CNNs} for large-vocabulary sign language recognition,'' in {\em Proc. IEEE Trans. Circuits Syst. Video Technol.}, 2019.
+
+\bibitem{yu2021movenet}
+J.~Yu, J.~Wang, Y.~Li, F.~Zhang, and M.~Grundmann, ``{MoveNet}: Ultra fast and accurate human pose estimation,'' in {\em Google Research Blog / arXiv:2103.13516}, 2021.
+
+\bibitem{johnson2019signer}
+M.~Johnson and A.~Khokhar, ``Signer-independent and signer-dependent sign language recognition: A comprehensive review,'' {\em IEEE Access}, vol.~7, pp.~126838--126859, 2019.
+
+\bibitem{al2022sign}
+R.~Al-Rousan, A.~Othman, and D.~Arthur, ``Arabic sign language recognition: A review of recent advances,'' {\em IEEE Access}, vol.~10, pp.~90847--90867, 2022.
+
+\bibitem{luqman2022cascaded}
+H.~Luqman and E.-S.~M. El-Alfy, ``Utilizing motion and spatial features for sign language gesture recognition using cascaded {CNN} and {LSTM} models,'' {\em Turkish J. Electr. Eng. Comput. Sci.}, vol.~30, no.~7, pp.~2508--2525, 2022.
+
+\bibitem{dabwan2023cnnlstm}
+B.~Dabwan and M.~Jadhav, ``A {CNN-LSTM} model for arabic sign language recognition,'' in {\em Proc. Int. Conf. on Advances in Computer Vision and Artificial Intelligence Technologies (ACVAIT)}, pp.~459--470, Atlantis Press, 2023.
+
+\bibitem{alsaadi2022arsla}
+Z.~Alsaadi, E.~Alshamani, M.~Alrehaili, A.~A.~D. Alrashdi, S.~Albelwi, and A.~O. Elfaki, ``A real time arabic sign language alphabets ({ArSLA}) recognition model using deep learning architecture,'' {\em Computers}, vol.~11, no.~5, p.~78, 2022.
+
+\bibitem{noor2024hybrid}
+T.~H. Noor, A.~Noor, A.~F. Alharbi, A.~Faisal, R.~Alrashidi, A.~S. Alsaedi, G.~Alharbi, T.~Alsanoosy, and A.~Alsaeedi, ``Real-time arabic sign language recognition using a hybrid deep learning model,'' {\em Sensors}, vol.~24, no.~11, p.~3683, 2024.
+
+\bibitem{rfc9110}
+{IETF}, ``{RFC} 9110 --- {HTTP} semantics,'' 2022.
+
+\bibitem{fastapi}
+S.~Ram{\'\i}rez, ``{FastAPI} documentation.'' \url{https://fastapi.tiangolo.com}, 2026.
+
+\bibitem{react}
+{Meta Open Source}, ``{React} documentation.'' \url{https://react.dev}, 2026.
+
+\bibitem{rfc6455}
+{IETF}, ``{RFC} 6455 --- the {WebSocket} protocol,'' 2011.
+
+\bibitem{wcag22}
+{W3C}, ``{WCAG} 2.2 --- web content accessibility guidelines.'' \url{https://www.w3.org/TR/WCAG22/}, 2023.
+
+\bibitem{abadi2016tensorflow}
+M.~Abadi, P.~Barham, J.~Chen, Z.~Chen, A.~Davis, J.~Dean, {\em et~al.}, ``{TensorFlow}: A system for large-scale machine learning,'' in {\em Proc. USENIX Symp. on Operating Systems Design and Implementation (OSDI)}, 2016.
+
+\bibitem{chollet2015keras}
+F.~Chollet {\em et~al.}, ``{Keras}.'' \url{https://keras.io}, 2024.
+
+\bibitem{pytorch2024}
+{PyTorch Foundation}, ``{PyTorch} documentation.'' \url{https://pytorch.org/docs}, 2024.
+
+\bibitem{chetlur2014cudnn}
+S.~Chetlur, C.~Woolley, P.~Vandermersch, J.~Cohen, J.~Tran, B.~Catanzaro, and E.~Shelhamer, ``{cuDNN}: Efficient primitives for deep learning,'' in {\em arXiv:1410.0759 / NVIDIA {cuDNN} Developer Documentation}, 2014.
+
+\bibitem{opencv2024docs}
+{OpenCV Team}, ``{OpenCV} documentation.'' \url{https://docs.opencv.org}, 2024.
+
+\bibitem{harris2020numpy}
+C.~R. Harris, K.~J. Millman, S.~J. van~der Walt, {\em et~al.}, ``Array programming with {NumPy},'' {\em Nature}, vol.~585, no.~7825, pp.~357--362, 2020.
+
+\bibitem{pedregosa2011sklearn}
+F.~Pedregosa, G.~Varoquaux, A.~Gramfort, V.~Michel, B.~Thirion, O.~Grisel, M.~Blondel, P.~Prettenhofer, R.~Weiss, V.~Dubourg, {\em et~al.}, ``{Scikit-learn}: Machine learning in {Python},'' {\em Journal of Machine Learning Research}, vol.~12, pp.~2825--2830, 2011.
+
+\bibitem{kluyver2016jupyter}
+T.~Kluyver, B.~Ragan-Kelley, F.~P{\'e}rez, B.~Granger, M.~Bussonnier, J.~Frederic, K.~Kelley, J.~Hamrick, J.~Grout, S.~Corlay, {\em et~al.}, ``{Jupyter} notebooks --- a publishing format for reproducible computational workflows,'' in {\em Proc. 20th Int. Conf. on Electronic Publishing (ELPUB)}, pp.~87--90, 2016.
+
+\bibitem{arabicreshaper2024}
+A.~Al-Shamisi {\em et~al.}, ``arabic-reshaper: Reconstruct arabic sentences for use in apps.'' \url{https://github.com/mpcabd/python-arabic-reshaper}, 2024.
+
+\bibitem{pythonbidi2024}
+M.~Cyprienko {\em et~al.}, ``python-bidi: Unicode bidirectional algorithm for python.'' \url{https://github.com/MeirKriheli/python-bidi}, 2024.
+
+\bibitem{unicode2021bidirectional}
+{Unicode Consortium}, ``Unicode standard annex \#9: Unicode bidirectional algorithm.'' \url{https://www.unicode.org/reports/tr9/}, 2021.
+
+\bibitem{pillow2024}
+{Pillow Contributors}, ``{Pillow} ({PIL} fork) --- python imaging library.'' \url{https://python-pillow.org}, 2024.
+
+\bibitem{li2020wlaslgithub}
+D.~Li, C.~Rodriguez, X.~Yu, and H.~Li, ``{WLASL}: Word-level {American Sign Language} dataset --- official {GitHub} repository.'' \url{https://github.com/dxli94/WLASL}, 2020.
+
+\bibitem{karslgithub2021}
+A.~A.~I. Sidig and H.~Luqman, ``{KArSL}: {Arabic} sign language database --- dataset portal.'' \url{https://hamzah-luqman.github.io/KArSL/}, 2021.
+
+\bibitem{powers2011evaluation}
+D.~M.~W. Powers, ``Evaluation: From precision, recall and {F}-measure to {ROC}, informedness, markedness and correlation,'' {\em Journal of Machine Learning Technologies}, vol.~2, no.~1, pp.~37--63, 2011.
+
+\bibitem{vite2024}
+{Vite Team}, ``{Vite} --- next generation frontend tooling.'' \url{https://vite.dev}, 2024.
+
+\bibitem{typescript2024}
+{Microsoft Corporation}, ``{TypeScript} documentation.'' \url{https://www.typescriptlang.org}, 2024.
+
+\bibitem{socketio2024}
+{Socket.IO}, ``{Socket.IO} --- bidirectional and low-latency communication.'' \url{https://socket.io/docs}, 2024.
+
+\bibitem{nodejs2024}
+{OpenJS Foundation}, ``{Node.js} documentation.'' \url{https://nodejs.org/en/docs}, 2024.
+
+\bibitem{expressjs2024}
+{OpenJS Foundation}, ``{Express} --- node.js web application framework.'' \url{https://expressjs.com}, 2024.
+
+\bibitem{prisma2024}
+{Prisma Data, Inc.}, ``{Prisma} orm documentation.'' \url{https://www.prisma.io/docs}, 2024.
+
+\bibitem{rfc7519}
+{IETF}, ``{RFC} 7519 --- {JSON} web token ({JWT}),'' 2015.
+
+\bibitem{uvicorn2024}
+T.~Encinas, ``{Uvicorn} --- {ASGI} web server.'' \url{https://www.uvicorn.org}, 2024.
+
+\bibitem{signmt2023}
+A.~Moryossef and Z.~Jiang, ``sign.mt: Real-time multilingual sign language translation application.'' \url{https://sign.mt}; arXiv:2310.05064, 2023.
+
+\bibitem{poseformat}
+{Sign Language Processing project}, ``pose-format: A file format and library for pose data.'' \url{https://github.com/sign-language-processing/pose}, 2024.
+
+\bibitem{w3c2023html}
+{W3C}, ``{HTML} living standard --- media capture and streams.'' \url{https://www.w3.org/TR/mediacapture-streams/}, 2023.
+
+\bibitem{bcrypt2024}
+N.~Provos and D.~Mazi{\`e}res, ``A future-adaptable password scheme ({bcrypt}).'' \url{https://www.usenix.org/legacy/events/usenix99/provos.html}, 1999.
+
+\bibitem{axios2024}
+{axios contributors}, ``{Axios} --- promise based {HTTP} client.'' \url{https://axios-http.com}, 2024.
+
+\bibitem{sqlite2024}
+D.~R. Hipp, ``{SQLite}.'' \url{https://www.sqlite.org}, 2024.
+
+\bibitem{carreira2017i3d}
+J.~Carreira and A.~Zisserman, ``Quo vadis, action recognition? a new model and the {Kinetics} dataset,'' in {\em Proc. IEEE Conf. on Computer Vision and Pattern Recognition (CVPR)}, 2017.
+
+\bibitem{reactrouter2024}
+{Remix Software, Inc.}, ``{React Router} documentation.'' \url{https://reactrouter.com}, 2024.
+
+\bibitem{spokentosigned}
+A.~Moryossef and M.~M{\"u}ller, ``spoken-to-signed-translation: A simple pipeline for spoken-to-signed translation.'' \url{https://github.com/sign-language-processing/spoken-to-signed-translation}, 2023.
+
+\bibitem{kaggle2024}
+{Kaggle Inc.}, ``{Kaggle} --- machine learning and data science community.'' \url{https://www.kaggle.com}, 2024.
+
+\bibitem{tensorflowjs2024}
+{Google TensorFlow Team}, ``{TensorFlow.js} --- machine learning for {JavaScript} developers.'' \url{https://www.tensorflow.org/js}, 2024.
+
+\end{thebibliography}

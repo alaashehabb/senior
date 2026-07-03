@@ -82,6 +82,12 @@ export function hasPose(poseWords, word, lang = "en") {
   if (poseWords.has(w)) return true;
   if (lang !== "ar") return false;
   const folded = foldWord(w, lang);
-  for (const p of poseWords) if (foldWord(p, lang) === folded) return true;
+  for (const p of poseWords) {
+    const pf = foldWord(p, lang);
+    if (pf === folded) return true;
+    // ال-stripped alias, mirroring the server's fold index: dictionary
+    // files often carry the definite form (القلب) of a bare query (قلب).
+    if (pf.startsWith("ال") && pf.length > 4 && pf.slice(2) === folded) return true;
+  }
   return false;
 }

@@ -1,0 +1,147 @@
+% ==========================================
+%               CHAPTER ONE
+% ==========================================
+\thispagestyle{plain}
+
+\begin{center}
+    \vspace*{0.5cm}
+    {\large \textit{Chapter One}} \\[0.4cm]
+    {\Large \textbf{1 \quad INTRODUCTION}}
+\end{center}
+\addcontentsline{toc}{chapter}{\textbf{1 \quad INTRODUCTION}}
+\vspace{1in}
+
+\normalsize
+\startchapterfloats{1}
+
+% --- 1.1 PROJECT OVERVIEW ---
+\noindent\textbf{1.1\quad PROJECT OVERVIEW}\par
+\addcontentsline{toc}{section}{\numberline{1.1}PROJECT OVERVIEW}
+\vspace{0.4cm}
+
+\noindent This graduation project presents \textbf{Eshara} (\arTxt{إشارة} --- Arabic for ``sign''), a real-time bilingual sign-language recognition system that translates hand gestures from a standard webcam into text through a web application. The system supports American Sign Language (ASL) and Arabic Sign Language (ArSL) at two recognition levels: static letters (finger-spelling) and isolated words signed across a one-to-two second window.\par\vspace{0.4cm}
+
+\noindent Eshara is built as a full-stack web product rather than a laboratory prototype alone. Four deep-learning models --- two Multi-Layer Perceptrons for letter recognition, an Inception I3D network for ASL word recognition, and a BiLSTM for ArSL word recognition --- are designed for a unified web inference pipeline. The deployed stack follows a three-tier path (React client $\rightarrow$ Node.js/Express API $\rightarrow$ FastAPI model-services), with webcam frames captured in the browser, authenticated at the Node layer, and forwarded internally for inference. Input comes from a standard webcam only --- no additional sensors or specialised capture equipment. Letter and ArSL word paths use compact landmark representations (\textbf{78-D} engineered features for ASL letters, \textbf{63-D} raw hand landmarks for ArSL letters, \textbf{225-D} normalised pose-and-hands sequences per frame for ArSL words). The ASL word model operates on \textbf{32-frame} clips of centre-cropped \textbf{224$\times$224} RGB video.\par\vspace{0.4cm}
+
+\noindent The four models are: (1)~an ASL letter MLP over \textbf{28 deployed classes} (78-D input; the source ASL Alphabet corpus contains 29 labels including \texttt{nothing}, which is excluded from the web vocabulary), (2)~an ArSL letter MLP over 32 classes (63-D input), (3)~an ASL word Inception I3D over 100 WLASL glosses, and (4)~an ArSL word BiLSTM over 100 Arabic sign classes (225-D $\times$ 48 frames). Each model was trained and evaluated with Top-1, Top-5, and macro-F1 metrics where applicable. Word methodology is in Chapter~4; experimental results in Chapter~6; full web implementation is in Chapter~5.\par\vspace{0.6cm}
+
+% --- 1.2 PROBLEM STATEMENT ---
+\noindent\textbf{1.2\quad PROBLEM STATEMENT}\par
+\addcontentsline{toc}{section}{\numberline{1.2}PROBLEM STATEMENT}
+\vspace{0.4cm}
+
+\noindent Approximately 466 million people worldwide live with disabling hearing loss, including around seven million in the Arab region~\cite{who2024hearing}. For most deaf and hard-of-hearing individuals, sign language --- not spoken language --- is the primary means of communication. Human sign-language interpreters are effective but costly, limited in availability, and cannot be present in every classroom, clinic, or customer-service interaction. Automated recognition offers a scalable alternative, yet most existing tools and research efforts focus on American Sign Language alone, or on letter recognition alone, and rarely combine both languages and both recognition levels in a single deployable web-based product~\cite{rastgoo2021survey,adaloglou2022comprehensive}.\par\vspace{0.4cm}
+
+\noindent The engineering problem addressed in this thesis is stated formally as follows:\par\vspace{0.3cm}
+
+\begin{quote}
+\noindent\textit{Given a continuous RGB video stream from a single uncalibrated camera, automatically recognise either (a)~the letter being finger-spelled per frame, or (b)~the isolated word being signed across a 1--2 second window, in either ASL or ArSL, with end-to-end latency below 200~ms, delivered through a standard web browser.}
+\end{quote}
+\vspace{0.3cm}
+
+\noindent\textbf{1.2.1\quad Current Constraints:}\par
+\addcontentsline{toc}{subsection}{\numberline{1.2.1}Current Constraints:}
+\vspace{0.3cm}
+
+\noindent The project was carried out under several practical limits. Training deep recognition models proved time-consuming: feature extraction over tens of thousands of images or video clips required multi-hour (often overnight) CPU/GPU runs, and several model families were trained \textbf{multiple times} after failed webcam trials exposed domain gaps (lighting, background clutter, MediaPipe dropout). The available local GPU (4\,GB VRAM) restricted batch size and forced word-model extraction and I3D experiments onto Kaggle when CUDA memory was exhausted. The full system had to be designed, trained, and evaluated within a single academic year. The solution was required to run in a standard web browser using only a laptop or desktop webcam. For privacy on letter and ArSL word paths, only numeric landmark vectors are sent over the network rather than continuous raw video; ASL word mode instead transmits encoded frame buffers to the server for I3D inference. Software versions and CUDA usage are tabulated as defined in Table~\ref{tab:ch3-env} (Chapter~3).\par\vspace{0.4cm}
+
+\noindent\textbf{1.2.2\quad Technical and Practical Gap:}\par
+\addcontentsline{toc}{subsection}{\numberline{1.2.2}Technical and Practical Gap:}
+\vspace{0.3cm}
+
+\noindent Several technical and practical gaps motivated this work. Most existing approaches handle either letter recognition or word recognition, but not both within one real-time pipeline. Few systems support more than one sign language in the same product, and many published solutions stop at offline accuracy without a live web interface. Running recognition in the browser is also demanding: inference must stay fast enough for interactive use, yet deep sequence and video models are costly to train and tune under limited compute. Human interpretation remains the default in practice because scalable, low-latency assistive tools are still uncommon. Eshara was designed to address these gaps through a bilingual, dual-level web application accessible from any modern browser.\par\vspace{0.6cm}
+
+% --- 1.3 PROJECT MOTIVE ---
+\noindent\textbf{1.3\quad PROJECT MOTIVE}\par
+\addcontentsline{toc}{section}{\numberline{1.3}PROJECT MOTIVE}
+\vspace{0.4cm}
+
+\noindent The primary motive of this project is to reduce the communication barrier between deaf signers and hearing non-signers in the Arab region and beyond. Arabic sign-language users currently lack the same assistive tooling available to ASL communities. Beyond the social impact, the project demonstrates that specialised models matched to each task --- compact MLPs for letters, a landmark BiLSTM for ArSL words, and a pretrained 3D convolutional network for ASL words --- can achieve strong accuracy within a deployable web application. The final deliverable is intended as a working web product suitable for education, healthcare, customer service, and everyday communication, not merely as an offline accuracy benchmark. The four-model design reflects a deliberate engineering choice: ASL and ArSL have entirely separate vocabularies and feature spaces, so four specialised pipelines --- each tuned to its own input representation and label set --- prove more tractable and more accurate than a single shared multilingual model behind one web interface.\par\vspace{0.6cm}
+
+% --- 1.4 AIMS AND OBJECTIVES ---
+\noindent\textbf{1.4\quad AIMS AND OBJECTIVES}\par
+\addcontentsline{toc}{section}{\numberline{1.4}AIMS AND OBJECTIVES}
+\vspace{0.4cm}
+
+\noindent\textbf{1.4.1\quad Aims:}\par
+\addcontentsline{toc}{subsection}{\numberline{1.4.1}Aims:}
+\vspace{0.3cm}
+
+\noindent The aim of this project is to design, train, evaluate, and deploy a real-time bilingual ASL/ArSL recognition system that covers both letter and word recognition and is accessible through a web application.\par\vspace{0.4cm}
+
+\noindent\textbf{1.4.2\quad Objectives:}\par
+\addcontentsline{toc}{subsection}{\numberline{1.4.2}Objectives:}
+\vspace{0.3cm}
+
+\noindent To achieve this aim, six specific objectives were defined. First, four model pipelines were built covering ASL letters, ArSL letters, ASL words, and ArSL words. Second, features were prepared per model: MediaPipe Hand landmarks for letters (\textbf{78-D} engineered for ASL, \textbf{63-D} raw for ArSL), a \textbf{32-frame} RGB clip pipeline for ASL words (I3D), and \textbf{225-D} normalised pose-and-hands sequences over 48 frames for ArSL words. Third, four deep-learning models were trained or integrated: an ASL letter MLP (28 deployed classes), an ArSL letter MLP (32 classes), an ASL word Inception I3D (100 WLASL classes), and an ArSL word BiLSTM (100 classes). Fourth, a three-tier backend path was implemented (Node.js/Express gateway with internal FastAPI model services). Fifth, a React web client was built with a live recognition interface and authenticated translation flow. Sixth, each model was evaluated using Top-1 accuracy, Top-5 accuracy, and macro-F1 on held-out test data; end-to-end latency was measured in the React web application (Chapter~5, Section~5.12).\par\vspace{0.4cm}
+
+\noindent The system deliberately excludes continuous sign-language translation, grammatical parsing, sign languages other than ASL and ArSL, multi-signer scene analysis, native mobile applications, and native depth-camera hardware. These areas are identified as future work in Chapter~9.\par\vspace{0.6cm}
+
+% --- 1.5 LITERATURE REVIEW ---
+\begin{secopen}
+\noindent\textbf{1.5\quad LITERATURE REVIEW}\par
+\addcontentsline{toc}{section}{\numberline{1.5}LITERATURE REVIEW}
+\vspace{0.4cm}
+
+\noindent\textit{The following is a summary of the field. A full literature review is presented in Chapter~2.}\par\vspace{0.4cm}
+
+\noindent\textbf{1.5.1\quad Existing Work:}\par
+\addcontentsline{toc}{subsection}{\numberline{1.5.1}Existing Work:}
+\vspace{0.3cm}
+
+\noindent Sign-language recognition has progressed from early RGB-camera and Hidden Markov Model approaches to deep convolutional and recurrent networks, and more recently to webcam-based landmark pipelines using tools such as MediaPipe~\cite{zhang2020mediapipe,mediapipeweb,rastgoo2021survey}. This project trains or integrates four models aligned to four recognition tasks: ASL letters (28 deployed classes from a 29-label corpus), ArSL letters (32 classes), ASL words (100 WLASL classes via I3D)~\cite{li2020wlasl}, and ArSL words (100 classes)~\cite{sidig2021karsl}. Prior published systems often address only one of these tasks or one language at a time, and rarely deliver all four through a single live web application.\par
+\end{secopen}
+\vspace{0.4cm}
+
+\noindent\textbf{1.5.2\quad Scholarly Views:}\par
+\addcontentsline{toc}{subsection}{\numberline{1.5.2}Scholarly Views:}
+\vspace{0.3cm}
+
+\noindent Researchers broadly agree that skeleton and landmark representations require less training data than raw-pixel approaches for many SLR tasks, that 3D convolutional networks capture spatio-temporal motion effectively from video clips, and that sequence models such as BiLSTMs and related temporal encoders outperform per-frame classifiers for landmark-based word recognition. Browser-based deployment is widely recognised as important for practical assistive technology, yet a unified bilingual web product covering letters and words in both ASL and ArSL remains uncommon in the literature.\par\vspace{0.4cm}
+
+\noindent\textbf{1.5.3\quad Challenges and Gaps:}\par
+\addcontentsline{toc}{subsection}{\numberline{1.5.3}Challenges and Gaps:}
+\vspace{0.3cm}
+
+\noindent Several persistent challenges motivate this project. Letter models must respond per frame with low latency, while word models must capture motion across a short temporal window --- serving both from one web pipeline is non-trivial. Bilingual coverage (ASL and ArSL) and dual granularity (letters and words) multiply the engineering and training effort because each of the four models requires its own architecture and evaluation. Real-time performance demands sustained inference on consumer hardware inside a web browser. Most academic contributions stop at offline accuracy for a single model rather than a unified, deployable four-model web system.\par\vspace{0.4cm}
+
+\noindent\textbf{1.5.4\quad Hypothesis:}\par
+\addcontentsline{toc}{subsection}{\numberline{1.5.4}Hypothesis:}
+\vspace{0.3cm}
+
+\noindent The central hypothesis of this work is that a webcam-driven pipeline with four specialised deep-learning models --- one per language and recognition level --- deployed in a unified web application can achieve reliable recognition accuracy across all four tasks and end-to-end inference latency of no more than 200~ms in a standard browser. On held-out test data, the letter models reach \textbf{99.06\,\%} (ASL) and \textbf{99.63\,\%} (ArSL) Top-1 accuracy; the ArSL word model reaches \textbf{99.62\,\%} Top-1 on 100 classes; the ASL word I3D checkpoint reaches \textbf{65.89\,\%} Top-1 on the WLASL-100 benchmark (Chapter~6). Full experimental detail for all four models appears in Chapter~6.\par\vspace{0.6cm}
+
+% --- 1.6 METHODOLOGY ---
+\begin{secopen}
+\noindent\textbf{1.6\quad METHODOLOGY}\par
+\addcontentsline{toc}{section}{\numberline{1.6}METHODOLOGY}
+\vspace{0.4cm}
+
+\noindent\textit{The following is a high-level overview. Full methodological detail is presented in Chapters~3~(letters) and~4~(words).}\par\vspace{0.4cm}
+\clearpage
+\noindent\textbf{1.6.1\quad Data Acquisition:}\par
+\addcontentsline{toc}{subsection}{\numberline{1.6.1}Data Acquisition:}
+\vspace{0.3cm}
+
+\noindent Four datasets underpin the four models. \textbf{Letters:} the Kaggle ASL Alphabet corpus ($\sim$87\,000 images, 29 classes)~\cite{akash2019aslalphabet} and ArASL2018 (54\,049 images, 32 classes)~\cite{arthur2018arasl2018} were converted offline to MediaPipe Hand landmarks; ASL samples use 78-D engineered vectors and ArSL samples use 63-D raw vectors (Chapter~3). \textbf{Words:} ASL word recognition uses a 100-class WLASL subset with 32-frame RGB clips for I3D inference~\cite{li2020wlasl}; ArSL words use the KArSL 100-class word subset (SignID 71--170; 48-frame, 225-D pose-and-hands clips) as described in Chapter~4~\cite{sidig2021karsl}. Extracted letter features and ArSL word sequences are cached as compressed NumPy archives. Letter models use stratified train/validation/test splits; the ArSL word model is evaluated on held-out KArSL clips (SignID 71--170). Trained checkpoints are exported for the web inference service (Chapter~5).\par
+\end{secopen}
+\vspace{0.4cm}
+
+\noindent\textbf{1.6.2\quad Cleaning and Preprocessing:}\par
+\addcontentsline{toc}{subsection}{\numberline{1.6.2}Cleaning and Preprocessing:}
+\vspace{0.3cm}
+
+\noindent For \textbf{letters}, static images or live frames pass through MediaPipe Hands; ASL applies wrist-relative normalisation and 15 joint angles before MLP input; ArSL uses raw 63-D coordinates. For \textbf{ASL words}, webcam frames are resized, centre-cropped to 224$\times$224, and normalised to $[-1, 1]$ before buffering 32 frames for I3D input. For \textbf{ArSL words}, Holistic landmarks are nose- and wrist-normalised to a 225-D body-relative representation per frame, then each clip is trimmed or padded to 48 frames (Chapter~4). Clips with missing labels or failed extraction are discarded.\par\vspace{0.4cm}
+
+\noindent Four models were trained or integrated on the processed data. The ASL letter model is a three-hidden-layer MLP (256$\rightarrow$128$\rightarrow$64$\rightarrow$28 softmax) over 78-D input (A--Z, \texttt{space}, \texttt{del}; \texttt{nothing} excluded from deployment). The ArSL letter model uses the same \textbf{MLP family} but a wider head (512$\rightarrow$256$\rightarrow$64$\rightarrow$32 softmax) over 63-D raw input (as compared in Table~\ref{tab:ch3-arch-compare}, Chapter~3). The ASL word model is a pretrained \textbf{Inception I3D} (Inflated 3D ConvNet) with a 100-way WLASL classification head. The ArSL word model is a stacked BiLSTM network over 225-D $\times$ 48 frames and 100 classes. The full three-tier deployment is described in Chapter~5.\par\vspace{0.6cm}
+
+% --- 1.7 REPORT ORGANISATION ---
+\secneed
+\noindent\textbf{1.7\quad REPORT ORGANISATION}\par
+\addcontentsline{toc}{section}{\numberline{1.7}REPORT ORGANISATION}
+\vspace{0.4cm}
+
+\noindent The remainder of this report is organised as follows. Chapter~2 presents the literature review, tracing sign-language recognition from early Hidden Markov Model and RGB-camera systems through deep convolutional and recurrent networks to modern hybrid landmark- and video-based pipelines, and identifying the gap that motivates this work. Chapter~3 details the letter-recognition methodology for both ASL and ArSL, covering dataset preparation, landmark feature engineering, MLP architecture, and training protocol. Chapter~4 presents the word-recognition methodology: the Inception I3D pipeline for ASL words and the BiLSTM pipeline for ArSL words, including feature extraction and model-side inference protocols.\par\vspace{0.3cm}
+
+\subsecneed
+\noindent Chapter~5 describes the full system implementation --- React frontend, Node.js/Express application tier, FastAPI model-services tier, live web recognition interface, and real-time latency measurements. Chapter~6 reports experimental results for all four models, including Top-1 and Top-5 accuracy, macro-F1, and ablation evidence. Chapter~7 discusses and interprets those results in the context of prior work, limitations, and the project hypothesis. Chapter~8 states the conclusions. Chapter~9 identifies directions for future work including continuous sign translation, extended vocabulary, and multilingual expansion.\par

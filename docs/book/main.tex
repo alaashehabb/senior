@@ -1,0 +1,158 @@
+\documentclass[12pt, a4paper]{report}
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage{arabtex}
+\usepackage{utf8}
+\setcode{utf8}
+
+\usepackage{graphicx}
+\usepackage{epstopdf-base} % preload: arabtex begin-document hook otherwise loads it inside a group (TL2026 error)
+\usepackage{geometry}
+\geometry{a4paper, top=1.5in, bottom=1.5in, left=1in, right=1in}
+\usepackage{setspace}
+\setstretch{1.2} % Compact body (AAST asks 1.5; tighter for readability vs page count)
+\usepackage{mathptmx} % Times New Roman style font
+\usepackage{amsmath} % Required for \text{} inside math equations
+\usepackage{amssymb} % \mathbb{R} etc. in Ch 3--4 methodology
+\usepackage{url} % Bibliography URLs (references.bib)
+\usepackage[normalem]{ulem} % Allows underlined text to wrap safely
+\usepackage{caption} % AAST §2.4.1 figure/table caption formatting
+
+% Figure captions: 10 pt bold centred; 4 pt above, 10 pt below
+\captionsetup[figure]{
+  font={bf,footnotesize},
+  labelfont=bf,
+  textfont=bf,
+  justification=centering,
+  singlelinecheck=false,
+  position=below
+}
+% Table titles: 12 pt bold centred (all chapters via float hook + width)
+\captionsetup[table]{
+  font=bf,
+  labelfont=bf,
+  textfont=bf,
+  justification=centering,
+  singlelinecheck=true,
+  position=above,
+  skip=6pt,
+  width=\linewidth,
+  margin=0pt
+}
+\setlength{\arrayrulewidth}{0.4pt} % Visible full grid borders in tables
+\setlength{\abovecaptionskip}{4pt}
+\setlength{\belowcaptionskip}{10pt}
+
+% Acronym list always appears (not only printonlyused)
+\usepackage{acronym}
+
+\usepackage{array} % Prevents text stretching and underfull warnings
+\renewcommand{\arraystretch}{1.15} % Readable row height in grid tables
+\setlength{\tabcolsep}{5pt}
+\usepackage{float} % [H] figure placement — keeps figures with their section}
+\usepackage{needspace} % \Needspace — avoid orphaned headings and split floats
+\usepackage{etoolbox} % hook figure/table environments for keep-together breaks
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}} % Wrapping text columns
+
+% Widow/orphan control: discourage single lines stranded at page top/bottom
+\widowpenalty=10000
+\clubpenalty=10000
+\displaywidowpenalty=10000
+
+% Keep floats with their section (use with [H] figures/tables)
+\AtBeginEnvironment{figure}{\Needspace{14\baselineskip}}
+\AtBeginEnvironment{table}{%
+  \Needspace{10\baselineskip}%
+  \centering
+  \captionsetup{justification=centering, singlelinecheck=true, width=\linewidth}%
+}
+
+% Manual \textbf{1.x} headings (no \section): keep title + intro + first subsection
+\newenvironment{secopen}{%
+  \Needspace{9\baselineskip}%
+  \begin{samepage}%
+}{%
+  \end{samepage}%
+}
+\newcommand{\secneed}{\Needspace{9\baselineskip}}
+\newcommand{\subsecneed}{\Needspace{5\baselineskip}}
+
+% Chapter-prefixed floats (1-1, 2-1, …) — chapters use manual headings, not \chapter{}
+\newcommand{\startchapterfloats}[1]{%
+  \setcounter{figure}{0}%
+  \setcounter{table}{0}%
+  \renewcommand{\thefigure}{#1-\arabic{figure}}%
+  \renewcommand{\thetable}{#1-\arabic{table}}%
+}
+
+% --- Arabic inline helper (RTL snippet inside English LTR text) ---
+\newcommand{\arTxt}[1]{\RL{#1}}
+
+% --- TOC/LOF/LOT Layout (AAST: titles left-aligned, all caps) ---
+\usepackage{tocloft} % legacy nottoc,notlof,notlot options removed: rejected by TeX Live 2026, never used by tocloft
+
+\renewcommand{\contentsname}{TABLE OF CONTENTS}
+\renewcommand{\listfigurename}{LIST OF FIGURES}
+\renewcommand{\listtablename}{LIST OF TABLES}
+
+% Left-align list page titles (not centred)
+\renewcommand{\cfttoctitlefont}{\Large\bfseries}
+\renewcommand{\cftaftertoctitle}{\par\vspace{0.4cm}}
+\renewcommand{\cftloftitlefont}{\Large\bfseries}
+\renewcommand{\cftafterloftitle}{\par\vspace{0.4cm}}
+\renewcommand{\cftlottitlefont}{\Large\bfseries}
+\renewcommand{\cftafterlottitle}{\par\vspace{0.4cm}}
+
+% 1. Format Chapter entries (Bold text + Dotted leaders)
+\renewcommand{\cftchapfont}{\bfseries}
+\renewcommand{\cftchappagefont}{\bfseries}
+\renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}}
+
+% 2. Format Section entries (Bold text + Dotted leaders)
+\renewcommand{\cftsecfont}{\bfseries}
+\renewcommand{\cftsecpagefont}{\bfseries}
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
+
+% 3. Format Subsection entries (Regular text + Dotted leaders)
+\renewcommand{\cftsubsecfont}{\normalfont}
+\renewcommand{\cftsubsecpagefont}{\normalfont}
+\renewcommand{\cftsubsecleader}{\cftdotfill{\cftdotsep}}
+
+% Prevents technical jargon from breaking margins across the whole book
+\emergencystretch=1em
+
+\begin{document}
+
+% --- Front Matter ---
+\input{titlepage}
+\input{declaration}
+\input{acknowledgment}
+\input{abstract}
+
+% --- Automatic Indexes (Lowercase Roman Page Numbering: i, ii, iii) ---
+\newpage
+\pagenumbering{roman}
+\input{lists}
+\input{acronyms}
+
+% --- Main Body (Arabic Page Numbering Starts Here) ---
+\newpage
+\pagenumbering{arabic}
+\input{chapter1}
+\input{chapter2}
+\input{chapter3}
+\input{chapter4}
+\input{chapter7}   % SYSTEM IMPLEMENTATION (now Chapter 5)
+\input{chapter5}   % RESULTS AND EVALUATION (now Chapter 6)
+\input{chapter6}   % DISCUSSION (now Chapter 7)
+\input{chapter8}
+\input{chapter9}
+
+% --- References (IEEE numbered [1], [2], ...) ---
+\newpage
+\addcontentsline{toc}{chapter}{\textbf{REFERENCES}}
+\bibliographystyle{ieeetr}
+\bibliography{references}
+
+\end{document}

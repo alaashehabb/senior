@@ -1,0 +1,45 @@
+\contentsline {table}{\numberline {2-1}{\ignorespaces Interpretation of SLR technological eras (aligned with Figure~\ref {fig:slr-timeline}).}}{10}{}%
+\contentsline {table}{\numberline {2-2}{\ignorespaces Machine-learning paradigms used in Eshara.}}{12}{}%
+\contentsline {table}{\numberline {2-3}{\ignorespaces Evaluation metrics in SLR literature and in Eshara.}}{15}{}%
+\contentsline {table}{\numberline {2-4}{\ignorespaces Vision pipelines considered during Eshara development.}}{18}{}%
+\contentsline {table}{\numberline {2-5}{\ignorespaces Feature-vector composition used by each Eshara model.}}{19}{}%
+\contentsline {table}{\numberline {2-6}{\ignorespaces Comparison of pose-estimation frameworks.}}{23}{}%
+\contentsline {table}{\numberline {2-7}{\ignorespaces Sign-language datasets used or referenced in this work.}}{24}{}%
+\contentsline {table}{\numberline {2-8}{\ignorespaces Approximate class balance across Eshara training corpora.}}{24}{}%
+\contentsline {table}{\numberline {2-9}{\ignorespaces Structural comparison with representative SLR research lines (not a claim of state-of-the-art rank).}}{28}{}%
+\contentsline {table}{\numberline {2-10}{\ignorespaces Research gaps addressed by Eshara.}}{29}{}%
+\contentsline {table}{\numberline {2-11}{\ignorespaces Architecture comparison of Eshara's four graduation models.}}{30}{}%
+\contentsline {table}{\numberline {3-1}{\ignorespaces Letter datasets, feature shapes, and split policies.}}{34}{}%
+\contentsline {table}{\numberline {3-2}{\ignorespaces Training and inference software environment (letters and words).}}{34}{}%
+\contentsline {table}{\numberline {3-3}{\ignorespaces The 15 inter-joint angle triplets used in the 78-D ASL feature vector. Each row specifies the landmark index triple $(a, b, c)$ where $b$ is the vertex joint; the angle is computed between bone vectors $b{\to }a$ and $b{\to }c$.}}{40}{}%
+\contentsline {table}{\numberline {3-4}{\ignorespaces Feature-vector dimension breakdown for the two letter models.}}{41}{}%
+\contentsline {table}{\numberline {3-5}{\ignorespaces Letter MLP architecture comparison. Both models use the same MLP \emph {family} but separate weights and tuned configurations.}}{46}{}%
+\contentsline {table}{\numberline {3-6}{\ignorespaces Engineering trade-offs for letter recognition in Eshara.}}{49}{}%
+\contentsline {table}{\numberline {4-1}{\ignorespaces Chapter~4 at a glance: side-by-side comparison of both word recognition pipelines.}}{51}{}%
+\contentsline {table}{\numberline {4-2}{\ignorespaces WLASL dataset statistics for the Model~3 (ASL word) graduation deployment.}}{52}{}%
+\contentsline {table}{\numberline {4-3}{\ignorespaces ASL RGB clip preprocessing steps (per frame, Model~3).}}{53}{}%
+\contentsline {table}{\numberline {4-4}{\ignorespaces Inception I3D layer stack (Model~3, ASL words). Branch configs for Inception stages: $[n_0, n_{1a}, n_{1b}, n_{2a}, n_{2b}, n_{3b}]$ per Equation~\eqref {eq:ch4-incept}. Input: $(1, 3, 32, 224, 224)$.}}{57}{}%
+\contentsline {table}{\numberline {4-5}{\ignorespaces ASL word stabilisation parameters (Model~3).}}{59}{}%
+\contentsline {table}{\numberline {4-6}{\ignorespaces KArSL dataset statistics for the Model~4 (ArSL word) graduation deployment.}}{61}{}%
+\contentsline {table}{\numberline {4-7}{\ignorespaces 225-D Holistic feature-vector block decomposition (ArSL word model). Missing detections are zero-filled.}}{62}{}%
+\contentsline {table}{\numberline {4-8}{\ignorespaces ArSL word BiLSTM full architecture (Model~4).}}{68}{}%
+\contentsline {table}{\numberline {4-9}{\ignorespaces Model~4 parameter breakdown. $d_1{=}225$ (input dim), $h{=}64$ (LSTM units per direction), $d_2{=}128$ (BiLSTM~1 output = $2h$).}}{69}{}%
+\contentsline {table}{\numberline {4-10}{\ignorespaces Detailed cross-language comparison of ASL and ArSL word recognition pipelines.}}{71}{}%
+\contentsline {table}{\numberline {4-11}{\ignorespaces Deployment artifacts for word recognition (Models~3 and~4).}}{72}{}%
+\contentsline {table}{\numberline {4-12}{\ignorespaces Engineering trade-offs for ASL word recognition (Model~3).}}{73}{}%
+\contentsline {table}{\numberline {4-13}{\ignorespaces Engineering trade-offs for ArSL word recognition (Model~4).}}{74}{}%
+\contentsline {table}{\numberline {4-14}{\ignorespaces Word-model evaluation protocol (reported in Chapter~6).}}{75}{}%
+\contentsline {table}{\numberline {5-1}{\ignorespaces Real-time web performance (pilot measurements, graduation dev hardware).}}{92}{}%
+\contentsline {table}{\numberline {5-2}{\ignorespaces Informal usability pilot observations ($N{=}3$, React web UI).}}{93}{}%
+\contentsline {table}{\numberline {5-3}{\ignorespaces Education module: superseded Canvas2D engine versus the deployed motion-capture pipeline.}}{105}{}%
+\contentsline {table}{\numberline {6-1}{\ignorespaces Recurring training and evaluation challenges (project experiments).}}{109}{}%
+\contentsline {table}{\numberline {6-2}{\ignorespaces Letter-model held-out test metrics (canonical training pipelines).}}{110}{}%
+\contentsline {table}{\numberline {6-3}{\ignorespaces ASL word model metrics --- deployed Inception I3D (\texttt {asl\_word\_i3d.pt}), WLASL-100 benchmark protocol.}}{113}{}%
+\contentsline {table}{\numberline {6-4}{\ignorespaces Deployed ArSL word-model metrics (100 classes, SignID 71--170, KArSL held-out test).}}{115}{}%
+\contentsline {table}{\numberline {6-5}{\ignorespaces ArSL word BiLSTM training configuration (KArSL 100-class subset).}}{115}{}%
+\contentsline {table}{\numberline {6-6}{\ignorespaces ArSL word deployment verification (bundle batch evaluation).}}{116}{}%
+\contentsline {table}{\numberline {6-7}{\ignorespaces Metrics source inventory (Chapter~6 sources; ASL words per WLASL-100 benchmark).}}{119}{}%
+\contentsline {table}{\numberline {6-8}{\ignorespaces Eshara four-model summary.}}{120}{}%
+\contentsline {table}{\numberline {6-9}{\ignorespaces Documented design studies (qualitative / partial quantitative).}}{121}{}%
+\contentsline {table}{\numberline {7-1}{\ignorespaces Superseded word-recognition experiment branches (not deployed in Eshara).}}{127}{}%
+\contentsline {table}{\numberline {8-1}{\ignorespaces Graduation deliverables and headline results.}}{130}{}%
