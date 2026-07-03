@@ -19,6 +19,11 @@ function AppHomePage() {
   const [usersLoading, setUsersLoading] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [roomId, setRoomId] = useState("");
+  const roomIdRef = useRef("");
+  useEffect(() => {
+    roomIdRef.current = roomId;
+  }, [roomId]);
+
   const [chatStatus, setChatStatus] = useState("Choose a user to start chat.");
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -176,7 +181,7 @@ function AppHomePage() {
     const token = localStorage.getItem("slr_token");
     if (!token) return undefined;
 
-    const socket = io("http://localhost:5000", { auth: { token } });
+    const socket = io("http://localhost:3000", { auth: { token } });
 
     socket.on("connect", () => {
       setChatStatus("Connected. Select a user to chat.");
@@ -184,6 +189,7 @@ function AppHomePage() {
 
     socket.on("chat:receive", (message) => {
       setMessages((prev) => {
+        if (roomIdRef.current && message.roomId !== roomIdRef.current) return prev;
         if (prev.some((item) => item.id === message.id)) return prev;
         return [...prev, message];
       });
@@ -364,7 +370,7 @@ function AppHomePage() {
                       marginBottom: "auto",
                     }}
                   >
-                    No messages yet. Join a user and start chatting.
+                    {roomId ? "No messages yet. Start translating signs to send the first message!" : "No messages yet. Join a user and start chatting."}
                   </p>
                 ) : (
                   messages.map((msg) => {
