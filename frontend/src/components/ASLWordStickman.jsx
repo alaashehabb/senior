@@ -416,6 +416,27 @@ export default function ASLWordStickman({ lang = "en" }) {
         }}
       />
 
+      {/* Instruction / caption — enlarged and directly under the stickman for visibility */}
+      {isFingerspell ? (
+        <p style={{ color: "var(--stickman-label-color)", margin: 0, fontSize: "1.2rem", textAlign: "center", lineHeight: 1.4, maxWidth: `${W}px` }}>
+          {lastLetter && lang === "en" && ASL_HINTS[lastLetter] ? (
+            <>
+              <span style={{ color: "var(--primary)", fontWeight: 700, fontSize: "1.45rem" }}>{lastLetter}</span>
+              {" — "}{ASL_HINTS[lastLetter]}
+            </>
+          ) : lastLetter ? (
+            <span dir={cfg.dir} style={{ color: "var(--primary)", fontWeight: 700, fontSize: "1.6rem" }}>{lastLetter}</span>
+          ) : (
+            cfg.spellHelp
+          )}
+        </p>
+      ) : cfg.words[selected] && (
+        <p style={{ color: "var(--stickman-label-color)", margin: 0, fontSize: "1.2rem", textAlign: "center", lineHeight: 1.4, maxWidth: `${W}px` }}>
+          <span dir={cfg.dir} style={{ color: "var(--primary)", fontWeight: 700, fontSize: "1.45rem" }}>{selected}</span>
+          {" — "}{cfg.words[selected].description}
+        </p>
+      )}
+
       {/* Category tabs */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", maxWidth: `${W + 60}px`, justifyContent: "center" }}>
         {TABS.map((c) => (
@@ -549,31 +570,10 @@ export default function ASLWordStickman({ lang = "en" }) {
         </button>
       </div>
 
-      {isFingerspell ? (
-        <p style={{ color: "var(--stickman-label-color)", margin: 0, fontSize: "0.8rem", textAlign: "center" }}>
-          {lastLetter && lang === "en" && ASL_HINTS[lastLetter] ? (
-            <>
-              <span style={{ color: "var(--secondary)", fontWeight: 600 }}>{lastLetter}</span>
-              {" — "}{ASL_HINTS[lastLetter]}
-            </>
-          ) : lastLetter ? (
-            <span dir={cfg.dir} style={{ color: "var(--secondary)", fontWeight: 600, fontSize: "1rem" }}>{lastLetter}</span>
-          ) : (
-            cfg.spellHelp
-          )}
-          <span style={{ display: "block", marginTop: "2px", fontSize: "0.72rem", opacity: 0.75 }}>
-            {cfg.attribution}
-          </span>
-        </p>
-      ) : cfg.words[selected] && (
-        <p style={{ color: "var(--stickman-label-color)", margin: 0, fontSize: "0.8rem", textAlign: "center" }}>
-          <span dir={cfg.dir} style={{ color: "var(--secondary)", fontWeight: 600 }}>{selected}</span>
-          {" — "}{cfg.words[selected].description}
-          {poseMode && (
-            <span style={{ display: "block", marginTop: "2px", fontSize: "0.72rem", opacity: 0.75 }}>
-              {cfg.attribution}
-            </span>
-          )}
+      {/* Attribution — moved to the bottom of the panel */}
+      {(isFingerspell || poseMode) && (
+        <p style={{ color: "var(--stickman-label-color)", margin: 0, fontSize: "0.72rem", opacity: 0.7, textAlign: "center" }}>
+          {cfg.attribution}
         </p>
       )}
     </div>

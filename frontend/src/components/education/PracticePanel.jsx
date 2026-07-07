@@ -21,7 +21,8 @@ const COUNTDOWN_STEPS = [3, 2, 1];
 // or real Arabic glyphs ("ع") — see practiceMatch.isLetterMatch.
 const LANG_CONFIG = {
   en: {
-    alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),
+    // "new letter" shuffle pool — G, P, Q, T, X, Z are excluded per request.
+    alphabet: "ABCDEFHIJKLMNORSUVWY".split(""),
     practiceWords: PRACTICE_READY_WORDS,
     dir: "ltr",
   },
