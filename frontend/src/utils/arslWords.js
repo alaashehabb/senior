@@ -33,6 +33,7 @@ export const AR_WORD_CATEGORIES = [
   { id: "school", label: "مدرسة وعمل" },
   { id: "time", label: "الوقت" },
   { id: "food", label: "طعام وشراب" },
+  { id: "medical", label: "طبي" },
 ];
 
 export const AR_WORDS = {
@@ -86,6 +87,17 @@ export const AR_WORDS = {
   "جبن": { category: "food", description: "Cheese" },
   "أرز": { category: "food", description: "Rice" },
   "السكر": { category: "food", description: "Sugar" },
+
+  // Medical/anatomy signs generated directly from the KArSL videos (the same
+  // signs the ArSL word RECOGNISER knows — SignID 71–170), so the viewer
+  // teaches exactly what the model expects. Poses live in poses/ar/ and were
+  // produced by MediaPipe Holistic on the KArSL clips, not sign.mt (jos).
+  "هيكل عظمي": { category: "medical", description: "Skeleton (KArSL)" },
+  "رئتان": { category: "medical", description: "Lungs (KArSL)" },
+  "فحص سريري": { category: "medical", description: "Clinical examination (KArSL)" },
+  "فحص النظر": { category: "medical", description: "Sight examination (KArSL)" },
+  "إعاقة جسدية": { category: "medical", description: "Physical disability (KArSL)" },
+  "يقفل": { category: "medical", description: "Close (KArSL)" },
 };
 
 // 28 base letters, in alphabetical order, for the Fingerspelling tab.

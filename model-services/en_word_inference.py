@@ -16,7 +16,7 @@ CLASS_LIST_PATH = SCRIPT_DIR / "models" / "wlasl" / "wlasl_class_list.txt"
 # WLASL Configuration
 NUM_CLASSES = 100
 FRAME_BUFFER_SIZE = 32
-MIN_CONFIDENCE = 0.50
+MIN_CONFIDENCE = 0.05
 
 # Global State
 _model = None
